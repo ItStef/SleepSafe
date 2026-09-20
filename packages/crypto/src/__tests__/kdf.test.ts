@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { type Bytes, constantTimeEqual, randomBytes, utf8Encode } from './bytes';
-import { CryptoError } from './errors';
+import { type Bytes, constantTimeEqual, randomBytes, utf8Encode } from '../bytes';
+import { CryptoError } from '../errors';
 import {
   DEFAULT_KDF_PARAMS,
   type KdfParams,
@@ -11,7 +11,7 @@ import {
   deriveMasterKey,
   generateSalt,
   hkdfSha256,
-} from './kdf';
+} from '../kdf';
 
 const TEST_PARAMS: KdfParams = { memoryKiB: 1024, iterations: 1, parallelism: 1 };
 

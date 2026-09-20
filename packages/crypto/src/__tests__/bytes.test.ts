@@ -7,8 +7,8 @@ import {
   toBase64Url,
   utf8Decode,
   utf8Encode,
-} from './bytes';
-import { CryptoError } from './errors';
+} from '../bytes';
+import { CryptoError } from '../errors';
 
 describe('randomBytes', () => {
   it('vraca trazenu duzinu', () => {
