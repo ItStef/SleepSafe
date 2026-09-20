@@ -123,4 +123,9 @@ describe('loadConfig: email server', () => {
       expect(() => loadConfig({ ...valid, ...bad })).toThrow(ZodError);
     }
   });
+  it('ogranicenje broja stavki po korisniku: podrazumevano 10000, najmanje 1', () => {
+    expect(loadConfig(valid).MAX_ITEMS_PER_USER).toBe(10_000);
+    expect(loadConfig({ ...valid, MAX_ITEMS_PER_USER: '50' }).MAX_ITEMS_PER_USER).toBe(50);
+    expect(() => loadConfig({ ...valid, MAX_ITEMS_PER_USER: '0' })).toThrow(ZodError);
+  });
 });

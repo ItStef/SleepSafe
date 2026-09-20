@@ -23,6 +23,8 @@ model User {
   kdfIterations   Int
   kdfParallelism  Int
   wrappedVaultKey Json
+  vaultRevision   Int    @default(0)
+
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -72,16 +74,18 @@ model OtpChallenge {
 }
 
 model VaultItem {
-  id        String    @id @default(uuid(7)) @db.Uuid
+  id        String    @db.Uuid
   userId    String    @db.Uuid
-  envelope  Json
-  version   Int       @default(1)
+  envelope  Json?
+  revision  Int
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId, updatedAt])
+  @@id([userId, id])
+  @@unique([userId, revision])
   @@map("vault_items")
 }
+

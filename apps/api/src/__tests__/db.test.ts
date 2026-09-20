@@ -96,7 +96,9 @@ describe.skipIf(!databaseUrl)('baza podataka', () => {
         expiresAt: new Date(Date.now() + 60_000),
       },
     });
-    await prisma.vaultItem.create({ data: { userId: user.id, envelope } });
+    await prisma.vaultItem.create({
+      data: { id: randomUUID(), userId: user.id, revision: 1, envelope },
+    });
 
     await prisma.user.delete({ where: { id: user.id } });
 
@@ -105,34 +107,61 @@ describe.skipIf(!databaseUrl)('baza podataka', () => {
     expect(await prisma.vaultItem.count({ where: { userId: user.id } })).toBe(0);
   });
 
-  it('sinhronizacija: vraca samo stavke izmenjene posle zadatog trenutka, ukljucujuci obrisane', async () => {
+  it('sinhronizacija: vraca samo stavke izmenjene posle zadatog kursora, ukljucujuci obrisane', async () => {
     const user = await createUser();
-    const oldItem = await prisma.vaultItem.create({ data: { userId: user.id, envelope } });
-    const since = new Date();
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    const newItem = await prisma.vaultItem.create({ data: { userId: user.id, envelope } });
+    const oldId = randomUUID();
+    const newId = randomUUID();
+    await prisma.vaultItem.create({ data: { id: oldId, userId: user.id, revision: 1, envelope } });
+    await prisma.vaultItem.create({ data: { id: newId, userId: user.id, revision: 2, envelope } });
     await prisma.vaultItem.update({
-      where: { id: oldItem.id },
-      data: { deletedAt: new Date(), version: { increment: 1 } },
+      where: { userId_id: { userId: user.id, id: oldId } },
+      data: { envelope: Prisma.DbNull, deletedAt: new Date(), revision: 3 },
     });
 
     const changed = await prisma.vaultItem.findMany({
-      where: { userId: user.id, updatedAt: { gt: since } },
-      orderBy: { updatedAt: 'asc' },
+      where: { userId: user.id, revision: { gt: 1 } },
+      orderBy: { revision: 'asc' },
     });
 
-    expect(changed.map((item) => item.id).sort()).toEqual([oldItem.id, newItem.id].sort());
-    const deleted = changed.find((item) => item.id === oldItem.id);
-    expect(deleted?.deletedAt).not.toBeNull();
-    expect(deleted?.version).toBe(2);
+    expect(changed.map((item) => item.id)).toEqual([newId, oldId]);
+    expect(changed[1]?.deletedAt).not.toBeNull();
+    expect(changed[1]?.envelope).toBeNull();
+    expect(changed[1]?.revision).toBe(3);
+  });
+
+  it('isti ID stavke moze postojati kod dva korisnika, ali ne dvaput kod istog', async () => {
+    const first = await createUser();
+    const second = await createUser();
+    const id = randomUUID();
+    await prisma.vaultItem.create({ data: { id, userId: first.id, revision: 1, envelope } });
+    await prisma.vaultItem.create({ data: { id, userId: second.id, revision: 1, envelope } });
+
+    await expect(
+      prisma.vaultItem.create({ data: { id, userId: first.id, revision: 2, envelope } }),
+    ).rejects.toMatchObject({ code: 'P2002' });
+  });
+
+  it('dve stavke istog korisnika ne mogu imati isti revision', async () => {
+    const user = await createUser();
+    await prisma.vaultItem.create({
+      data: { id: randomUUID(), userId: user.id, revision: 1, envelope },
+    });
+    await expect(
+      prisma.vaultItem.create({
+        data: { id: randomUUID(), userId: user.id, revision: 1, envelope },
+      }),
+    ).rejects.toMatchObject({ code: 'P2002' });
   });
 
   it('updatedAt se menja pri izmeni, a createdAt ne', async () => {
     const user = await createUser();
-    const item = await prisma.vaultItem.create({ data: { userId: user.id, envelope } });
+    const id = randomUUID();
+    const item = await prisma.vaultItem.create({
+      data: { id, userId: user.id, revision: 1, envelope },
+    });
     await new Promise((resolve) => setTimeout(resolve, 20));
     const updated = await prisma.vaultItem.update({
-      where: { id: item.id },
+      where: { userId_id: { userId: user.id, id } },
       data: {
         envelope: { ...envelope, ct: 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB' },
       },

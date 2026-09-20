@@ -23,6 +23,8 @@ const schema = z.object({
   LOGIN_LOCKOUT_MINUTES: z.coerce.number().int().min(1).default(15),
 
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  MAX_ITEMS_PER_USER: z.coerce.number().int().min(1).default(10_000),
+
   // Email server. Podrazumevano je lokalni Mailpit (docker-compose), koji ne trazi ni sifrovanje ni lozinku.
   SMTP_HOST: z.string().min(1).default('127.0.0.1'),
   SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(1025),

@@ -10,6 +10,7 @@ import { AppError } from './errors';
 import type { Mailer } from './mailer';
 import { registerAuthRoutes } from './routes/auth';
 import { registerHealthRoutes } from './routes/health';
+import { registerVaultRoutes } from './routes/vault';
 
 export interface AppDeps {
   config: Config;
@@ -98,6 +99,7 @@ export async function buildApp({
   });
 
   registerHealthRoutes(app, { prisma });
+  registerVaultRoutes(app, { config, prisma, clock });
   registerAuthRoutes(app, { config, prisma, mailer, clock });
 
   return app;
