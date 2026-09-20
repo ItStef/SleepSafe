@@ -208,6 +208,9 @@ importers:
       '@sleepsafe/crypto':
         specifier: workspace:*
         version: link:../../packages/crypto
+      '@sleepsafe/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       dotenv:
         specifier: ^18.0.1
         version: 18.0.1
@@ -245,6 +248,12 @@ importers:
       hash-wasm:
         specifier: ^4.12.0
         version: 4.12.0
+
+  packages/shared:
+    dependencies:
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
 
 packages:
 

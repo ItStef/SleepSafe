@@ -4,6 +4,7 @@ import { ZodError } from 'zod';
 import { buildApp } from './app';
 import { loadConfig } from './config';
 import { createPrismaClient } from './db';
+import { createSmtpMailer } from './mailer';
 
 loadDotenv({ path: fileURLToPath(new URL('../../../.env', import.meta.url)), quiet: true });
 
@@ -24,7 +25,7 @@ function readConfig() {
 
 const config = readConfig();
 const prisma = createPrismaClient(config.DATABASE_URL);
-const app = await buildApp({ config, prisma });
+const app = await buildApp({ config, prisma, mailer: createSmtpMailer(config) });
 
 async function shutdown(signal: string) {
   app.log.info({ signal }, 'shutting down');

@@ -7,25 +7,33 @@ import { ZodError } from 'zod';
 import type { Config } from './config';
 import type { PrismaClient } from './db';
 import { AppError } from './errors';
+import type { Mailer } from './mailer';
+import { registerAuthRoutes } from './routes/auth';
 import { registerHealthRoutes } from './routes/health';
 
 export interface AppDeps {
   config: Config;
   prisma: PrismaClient;
+  mailer: Mailer;
+  clock?: () => Date;
 }
 
 function errorBody(code: string, message: string) {
   return { error: { code, message } };
 }
 
-export async function buildApp({ config, prisma }: AppDeps): Promise<FastifyInstance> {
+export async function buildApp({
+  config,
+  prisma,
+  mailer,
+  clock = () => new Date(),
+}: AppDeps): Promise<FastifyInstance> {
   const app = Fastify({
     logger:
       config.NODE_ENV === 'test'
         ? false
         : {
             level: config.LOG_LEVEL,
-            // Tajne nikad ne smeju u log.
             redact: [
               'req.headers.authorization',
               'req.headers.cookie',
@@ -86,6 +94,7 @@ export async function buildApp({ config, prisma }: AppDeps): Promise<FastifyInst
   });
 
   registerHealthRoutes(app, { prisma });
+  registerAuthRoutes(app, { config, prisma, mailer, clock });
 
   return app;
 }

@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../app';
 import { type Config, loadConfig } from '../config';
 import { type PrismaClient, createPrismaClient } from '../db';
+import { MemoryMailer } from '../mailer';
 
 const APP_URL = 'http://localhost:5173';
 
@@ -26,7 +27,11 @@ describe('server', () => {
   const apps: FastifyInstance[] = [];
 
   async function create(overrides: Record<string, string> = {}, prisma = workingDb) {
-    const app = await buildApp({ config: testConfig(overrides), prisma });
+    const app = await buildApp({
+      config: testConfig(overrides),
+      prisma,
+      mailer: new MemoryMailer(),
+    });
     apps.push(app);
     return app;
   }
