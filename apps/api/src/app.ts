@@ -11,6 +11,8 @@ import type { Mailer } from './mailer';
 import { registerAuthRoutes } from './routes/auth';
 import { registerHealthRoutes } from './routes/health';
 import { registerVaultRoutes } from './routes/vault';
+import { registerAccountRoutes } from './routes/account';
+import { FailureThrottle } from './throttle';
 
 export interface AppDeps {
   config: Config;
@@ -100,7 +102,12 @@ export async function buildApp({
 
   registerHealthRoutes(app, { prisma });
   registerVaultRoutes(app, { config, prisma, clock });
-  registerAuthRoutes(app, { config, prisma, mailer, clock });
+  const throttle = new FailureThrottle(
+    config.LOGIN_MAX_FAILURES,
+    config.LOGIN_LOCKOUT_MINUTES * 60_000,
+  );
+  registerAuthRoutes(app, { config, prisma, mailer, clock, throttle });
+  registerAccountRoutes(app, { config, prisma, mailer, clock, throttle });
 
   return app;
 }

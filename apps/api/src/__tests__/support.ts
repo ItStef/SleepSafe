@@ -4,6 +4,7 @@ import {
   createVault,
   deriveKeys,
   generateSalt,
+  rewrapVaultKey,
   toBase64Url,
 } from '@sleepsafe/crypto';
 import type { FastifyInstance } from 'fastify';
@@ -164,4 +165,33 @@ export function refreshWith(
     headers: origin === null ? {} : { origin },
     cookies: { [REFRESH_COOKIE]: refreshToken },
   });
+}
+
+export async function prepareNewPassword(registration: Registration, newPassword: string) {
+  const newSalt = generateSalt();
+  const { authKey, kek } = await deriveKeys(newPassword, newSalt, CLIENT_KDF);
+  const wrappedVaultKey = await rewrapVaultKey(
+    registration.body.wrappedVaultKey,
+    registration.kek,
+    kek,
+  );
+  const newAuthKey = toBase64Url(authKey);
+  const kdfSalt = toBase64Url(newSalt);
+  return {
+    payload: {
+      currentAuthKey: registration.body.authKey,
+      newAuthKey,
+      kdfSalt,
+      kdfMemoryKiB: CLIENT_KDF.memoryKiB,
+      kdfIterations: CLIENT_KDF.iterations,
+      kdfParallelism: CLIENT_KDF.parallelism,
+      wrappedVaultKey,
+    },
+    next: {
+      ...registration,
+      salt: newSalt,
+      kek,
+      body: { ...registration.body, authKey: newAuthKey, kdfSalt, wrappedVaultKey },
+    },
+  };
 }

@@ -148,7 +148,7 @@ describe.skipIf(!process.env['DATABASE_URL'])('sesije: me, refresh i logout', ()
       const expired = await logIn(env, registration);
       await env.prisma.session.updateMany({
         where: { user: { email: registration.body.email }, revokedAt: null },
-        data: { expiresAt: new Date(Date.now() - 1000) },
+        data: { expiresAt: new Date(0) },
       });
       expect((await me(expired.accessToken)).statusCode).toBe(401);
     });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildOtpEmail } from '../emails';
+import { buildNoticeEmail, buildOtpEmail } from '../emails';
 
 describe('buildOtpEmail', () => {
   it('poruka za prijavu sadrzi kod, rok i upozorenje', () => {
@@ -37,5 +37,32 @@ describe('buildOtpEmail', () => {
     expect(build('12345a', 10)).toThrow('Invalid OTP email parameters');
     expect(build('123456', 0)).toThrow('Invalid OTP email parameters');
     expect(build('123456', 1.5)).toThrow('Invalid OTP email parameters');
+  });
+});
+
+describe('buildNoticeEmail', () => {
+  it('obavestenje o promeni lozinke ima naslov, adresu i savet', () => {
+    const mail = buildNoticeEmail('korisnik@example.com', 'PASSWORD_CHANGED');
+    expect(mail.to).toBe('korisnik@example.com');
+    expect(mail.subject).toBe('SleepSafe: master lozinka je promenjena');
+    expect(mail.text).toContain('promenjena');
+    expect(mail.text).toContain('Ako niste');
+  });
+
+  it('obavestenje o brisanju naloga kaze da se podaci ne mogu vratiti', () => {
+    const mail = buildNoticeEmail('korisnik@example.com', 'ACCOUNT_DELETED');
+    expect(mail.subject).toBe('SleepSafe: nalog je obrisan');
+    expect(mail.text).toContain('trajno obrisani');
+    expect(mail.text).toContain('ne mogu vratiti');
+  });
+
+  it('nema koda, linkova ni HTML-a', () => {
+    for (const kind of ['PASSWORD_CHANGED', 'ACCOUNT_DELETED'] as const) {
+      const { text, subject } = buildNoticeEmail('a@example.com', kind);
+      expect(text).not.toMatch(/\b\d{6}\b/);
+      for (const part of [text, subject]) {
+        expect(part).not.toMatch(/https?:|www\.|<[a-z/]/i);
+      }
+    }
   });
 });

@@ -21,7 +21,7 @@ import { AppError } from '../errors';
 import type { Mailer } from '../mailer';
 import { fakeKdfSalt, hashAuthKey, signAccessToken, verifyAuthKey } from '../security';
 import { createSession, revokeSession, rotateSession } from '../sessions';
-import { FailureThrottle } from '../throttle';
+import type { FailureThrottle } from '../throttle';
 
 const REFRESH_COOKIE = 'sleepsafe_refresh';
 const REFRESH_COOKIE_PATH = '/auth';
@@ -32,6 +32,7 @@ export interface AuthDeps {
   prisma: PrismaClient;
   mailer: Mailer;
   clock: () => Date;
+  throttle: FailureThrottle;
 }
 
 function isUniqueViolation(error: unknown): boolean {
@@ -39,15 +40,12 @@ function isUniqueViolation(error: unknown): boolean {
 }
 
 export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
-  const { config, prisma, mailer, clock } = deps;
+  const { config, prisma, mailer, clock, throttle: loginThrottle } = deps;
   const authLimit = {
     rateLimit: { max: config.AUTH_RATE_LIMIT_PER_MINUTE, timeWindow: '1 minute' },
   };
   const authenticate = createAuthenticator({ config, prisma, clock });
-  const loginThrottle = new FailureThrottle(
-    config.LOGIN_MAX_FAILURES,
-    config.LOGIN_LOCKOUT_MINUTES * 60_000,
-  );
+
   const sessionTtlMs = config.SESSION_TTL_DAYS * 24 * 60 * 60 * 1000;
   const appOrigin = new URL(config.APP_URL).origin;
   const cookieOptions = {
