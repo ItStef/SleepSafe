@@ -102,4 +102,25 @@ describe('loadConfig: email server', () => {
     expect(() => loadConfig({ ...production, SMTP_TLS: 'tls' })).not.toThrow();
     expect(() => loadConfig({ ...valid, NODE_ENV: 'development', SMTP_TLS: 'none' })).not.toThrow();
   });
+
+  it('podrazumevane vrednosti za sesije i prijavu', () => {
+    const config = loadConfig(valid);
+    expect(config.ACCESS_TOKEN_TTL_SECONDS).toBe(900);
+    expect(config.SESSION_TTL_DAYS).toBe(30);
+    expect(config.LOGIN_MAX_FAILURES).toBe(10);
+    expect(config.LOGIN_LOCKOUT_MINUTES).toBe(15);
+  });
+
+  it('odbija nerazumne rokove sesija i pragove prijave', () => {
+    for (const bad of [
+      { ACCESS_TOKEN_TTL_SECONDS: '10' },
+      { ACCESS_TOKEN_TTL_SECONDS: '86400' },
+      { SESSION_TTL_DAYS: '0' },
+      { SESSION_TTL_DAYS: '3650' },
+      { LOGIN_MAX_FAILURES: '0' },
+      { LOGIN_LOCKOUT_MINUTES: '0' },
+    ]) {
+      expect(() => loadConfig({ ...valid, ...bad })).toThrow(ZodError);
+    }
+  });
 });

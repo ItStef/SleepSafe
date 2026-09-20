@@ -90,3 +90,78 @@ export function codeFrom(mail: Mail | undefined): string {
   }
   return code;
 }
+
+export const APP_ORIGIN = 'http://localhost:5173';
+export const REFRESH_COOKIE = 'sleepsafe_refresh';
+
+type Registration = Awaited<ReturnType<typeof prepareRegistration>>;
+
+export async function registerVerified(
+  env: TestEnv,
+  email: string,
+  password: string,
+): Promise<Registration> {
+  const registration = await prepareRegistration(email, password);
+  const response = await env.app.inject({
+    method: 'POST',
+    url: '/auth/register',
+    payload: registration.body,
+  });
+  const { challengeId } = response.json<{ challengeId: string }>();
+  const verify = await env.app.inject({
+    method: 'POST',
+    url: '/auth/verify-email',
+    payload: { challengeId, code: codeFrom(env.mailer.last) },
+  });
+  if (verify.statusCode !== 204) {
+    throw new Error('Email verification failed in test setup');
+  }
+  return registration;
+}
+
+export interface LoggedIn {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export async function logIn(env: TestEnv, registration: Registration): Promise<LoggedIn> {
+  const { email, authKey } = registration.body;
+  const login = await env.app.inject({
+    method: 'POST',
+    url: '/auth/login',
+    payload: { email, authKey },
+  });
+  if (login.statusCode !== 202) {
+    throw new Error(`Login failed in test setup: ${login.statusCode}`);
+  }
+  const verify = await env.app.inject({
+    method: 'POST',
+    url: '/auth/verify-otp',
+    payload: {
+      challengeId: login.json<{ challengeId: string }>().challengeId,
+      code: codeFrom(env.mailer.last),
+    },
+  });
+  const refreshToken = verify.cookies.find((cookie) => cookie.name === REFRESH_COOKIE)?.value;
+  if (verify.statusCode !== 200 || !refreshToken) {
+    throw new Error('OTP verification failed in test setup');
+  }
+  return { accessToken: verify.json<{ accessToken: string }>().accessToken, refreshToken };
+}
+
+export function bearer(accessToken: string): { authorization: string } {
+  return { authorization: `Bearer ${accessToken}` };
+}
+
+export function refreshWith(
+  env: TestEnv,
+  refreshToken: string,
+  origin: string | null = APP_ORIGIN,
+) {
+  return env.app.inject({
+    method: 'POST',
+    url: '/auth/refresh',
+    headers: origin === null ? {} : { origin },
+    cookies: { [REFRESH_COOKIE]: refreshToken },
+  });
+}

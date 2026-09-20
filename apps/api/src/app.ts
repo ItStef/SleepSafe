@@ -71,6 +71,10 @@ export async function buildApp({
     errorResponseBuilder: () => new AppError(429, 'RATE_LIMITED', 'Too many requests'),
   });
 
+  app.addHook('onSend', async (_request, reply) => {
+    reply.header('Cache-Control', 'no-store');
+  });
+
   app.setNotFoundHandler((_request, reply) => {
     return reply.code(404).send(errorBody('NOT_FOUND', 'Not found'));
   });

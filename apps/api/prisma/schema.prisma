@@ -38,6 +38,7 @@ model Session {
   id               String    @id @default(uuid(7)) @db.Uuid
   userId           String    @db.Uuid
   refreshTokenHash String    @unique
+  previousRefreshTokenHash String?
   deviceName       String?
   userAgent        String?
   createdAt        DateTime  @default(now())
@@ -49,6 +50,7 @@ model Session {
 
   @@index([userId])
   @@index([expiresAt])
+  @@index([previousRefreshTokenHash])
   @@map("sessions")
 }
 

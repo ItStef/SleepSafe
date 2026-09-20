@@ -42,8 +42,26 @@ export const verifyCodeRequestSchema = z.strictObject({
 
 export const challengeResponseSchema = z.strictObject({ challengeId: challengeIdSchema });
 
+export const loginRequestSchema = z.strictObject({ email: emailSchema, authKey: authKeySchema });
+
+export const accessTokenResponseSchema = z.strictObject({
+  accessToken: z.string().regex(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/),
+  expiresIn: z.number().int().positive(),
+});
+
+export const meResponseSchema = z.strictObject({
+  id: z.uuid(),
+  email: emailSchema,
+  ...kdfParamsSchema.shape,
+  wrappedVaultKey: wrappedKeyEnvelopeSchema,
+});
+
 export type PreloginRequest = z.infer<typeof preloginRequestSchema>;
 export type PreloginResponse = z.infer<typeof preloginResponseSchema>;
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 export type VerifyCodeRequest = z.infer<typeof verifyCodeRequestSchema>;
 export type ChallengeResponse = z.infer<typeof challengeResponseSchema>;
+
+export type LoginRequest = z.infer<typeof loginRequestSchema>;
+export type AccessTokenResponse = z.infer<typeof accessTokenResponseSchema>;
+export type MeResponse = z.infer<typeof meResponseSchema>;

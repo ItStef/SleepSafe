@@ -8,6 +8,9 @@ import {
   registerRequestSchema,
   verifyCodeRequestSchema,
   wrappedKeyEnvelopeSchema,
+  accessTokenResponseSchema,
+  loginRequestSchema,
+  meResponseSchema,
 } from '../auth';
 
 const authKey = 'A'.repeat(43);
@@ -129,5 +132,47 @@ describe('ostali zahtevi', () => {
     expect(verifyCodeRequestSchema.safeParse(ok).success).toBe(true);
     expect(verifyCodeRequestSchema.safeParse({ ...ok, code: '12' }).success).toBe(false);
     expect(verifyCodeRequestSchema.safeParse({ code: '123456' }).success).toBe(false);
+  });
+});
+
+describe('prijava i odgovori', () => {
+  it('login trazi tacno email i Auth kljuc', () => {
+    expect(loginRequestSchema.parse({ email: ' A@Example.com ', authKey })).toEqual({
+      email: 'a@example.com',
+      authKey,
+    });
+    expect(loginRequestSchema.safeParse({ email: 'a@example.com' }).success).toBe(false);
+    expect(
+      loginRequestSchema.safeParse({ email: 'a@example.com', authKey: 'kratak' }).success,
+    ).toBe(false);
+    expect(
+      loginRequestSchema.safeParse({ email: 'a@example.com', authKey, password: 'x' }).success,
+    ).toBe(false);
+  });
+
+  it('odgovor sa tokenom trazi JWT oblika i pozitivan rok', () => {
+    const ok = { accessToken: 'aaa.bbb.ccc', expiresIn: 900 };
+    expect(accessTokenResponseSchema.safeParse(ok).success).toBe(true);
+    expect(accessTokenResponseSchema.safeParse({ ...ok, accessToken: 'nije-jwt' }).success).toBe(
+      false,
+    );
+    expect(accessTokenResponseSchema.safeParse({ ...ok, expiresIn: 0 }).success).toBe(false);
+    expect(accessTokenResponseSchema.safeParse({ ...ok, refreshToken: 'x' }).success).toBe(false);
+  });
+
+  it('odgovor me sadrzi KDF parametre i umotani kljuc, i nista vise', () => {
+    const { kdfSalt, kdfMemoryKiB, kdfIterations, kdfParallelism, wrappedVaultKey } = validRegister;
+    const ok = {
+      id: '3f2b8c1e-7a44-4d0b-9a55-1c2d3e4f5a6b',
+      email: 'korisnik@example.com',
+      kdfSalt,
+      kdfMemoryKiB,
+      kdfIterations,
+      kdfParallelism,
+      wrappedVaultKey,
+    };
+    expect(meResponseSchema.safeParse(ok).success).toBe(true);
+    expect(meResponseSchema.safeParse({ ...ok, authHash: 'x' }).success).toBe(false);
+    expect(meResponseSchema.safeParse({ ...ok, id: 'nije-uuid' }).success).toBe(false);
   });
 });

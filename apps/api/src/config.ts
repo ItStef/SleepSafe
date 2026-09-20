@@ -16,6 +16,12 @@ const schema = z.object({
   TRUST_PROXY: booleanFromEnv,
   RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).default(120),
   AUTH_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).default(10),
+
+  ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().min(60).max(3600).default(900),
+  SESSION_TTL_DAYS: z.coerce.number().int().min(1).max(365).default(30),
+  LOGIN_MAX_FAILURES: z.coerce.number().int().min(1).default(10),
+  LOGIN_LOCKOUT_MINUTES: z.coerce.number().int().min(1).default(15),
+
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   // Email server. Podrazumevano je lokalni Mailpit (docker-compose), koji ne trazi ni sifrovanje ni lozinku.
   SMTP_HOST: z.string().min(1).default('127.0.0.1'),
