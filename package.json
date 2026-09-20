@@ -12,7 +12,9 @@
     "db:up": "docker compose --env-file .env -f infra/docker-compose.yml up -d",
     "db:down": "docker compose --env-file .env -f infra/docker-compose.yml down",
     "db:generate": "pnpm --filter @sleepsafe/api db:generate",
-    "db:migrate": "pnpm --filter @sleepsafe/api db:migrate"
+    "db:migrate": "pnpm --filter @sleepsafe/api db:migrate",
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts"
   },
   "author": "",
   "license": "ISC",
