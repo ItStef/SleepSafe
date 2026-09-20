@@ -1,0 +1,59 @@
+# Zavisnosti
+node_modules/
+.pnpm-store/
+
+# Build izlaz
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Testovi i pokrivenost
+coverage/
+playwright-report/
+test-results/
+.vitest-cache/
+
+# Tajne i konfiguracija okruženja (NIKAD u repozitorijum)
+.env
+.env.*
+!.env.example
+
+# Ključevi i sertifikati
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Logovi
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Baza i podaci lokalnog razvoja
+*.sqlite
+*.db
+infra/data/
+infra/postgres-data/
+*.dump
+*.sql.gz
+
+# Vite / cache
+.vite/
+.cache/
+.turbo/
+
+# Editori
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Lokalna podešavanja Claude Code
+.claude/settings.local.json
+
+# Operativni sistem
+.DS_Store
+Thumbs.db
+Desktop.ini
