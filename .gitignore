@@ -8,6 +8,9 @@ build/
 out/
 *.tsbuildinfo
 
+# Prisma klijent (generise se komandom pnpm db:generate)
+apps/api/src/generated/
+
 # Testovi i pokrivenost
 coverage/
 playwright-report/
