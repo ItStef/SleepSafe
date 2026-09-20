@@ -59,3 +59,47 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ ...valid, ...example, NODE_ENV: 'development' })).not.toThrow();
   });
 });
+
+describe('loadConfig: email server', () => {
+  it('podrazumevano cilja lokalni Mailpit bez sifrovanja i bez lozinke', () => {
+    const config = loadConfig(valid);
+    expect(config.SMTP_HOST).toBe('127.0.0.1');
+    expect(config.SMTP_PORT).toBe(1025);
+    expect(config.SMTP_TLS).toBe('none');
+    expect(config.SMTP_USER).toBeUndefined();
+    expect(config.SMTP_PASS).toBeUndefined();
+    expect(config.SMTP_FROM).toContain('no-reply@');
+  });
+
+  it('prihvata podesavanja pravog email servera', () => {
+    const config = loadConfig({
+      ...valid,
+      SMTP_HOST: 'smtp.example.com',
+      SMTP_PORT: '587',
+      SMTP_TLS: 'starttls',
+      SMTP_USER: 'korisnik',
+      SMTP_PASS: 'lozinka',
+    });
+    expect(config.SMTP_PORT).toBe(587);
+    expect(config.SMTP_TLS).toBe('starttls');
+    expect(config.SMTP_USER).toBe('korisnik');
+  });
+
+  it('odbija nepoznat nacin sifrovanja i neispravan port', () => {
+    expect(() => loadConfig({ ...valid, SMTP_TLS: 'ssl' })).toThrow(ZodError);
+    expect(() => loadConfig({ ...valid, SMTP_PORT: '0' })).toThrow(ZodError);
+  });
+
+  it('trazi da se korisnik i lozinka zadaju zajedno', () => {
+    expect(() => loadConfig({ ...valid, SMTP_USER: 'korisnik' })).toThrow(/set together/);
+    expect(() => loadConfig({ ...valid, SMTP_PASS: 'lozinka' })).toThrow(/set together/);
+  });
+
+  it('u produkciji ne dozvoljava nesifrovanu vezu ka email serveru', () => {
+    const production = { ...valid, NODE_ENV: 'production' };
+    expect(() => loadConfig({ ...production, SMTP_TLS: 'none' })).toThrow(/starttls or tls/);
+    expect(() => loadConfig({ ...production, SMTP_TLS: 'starttls' })).not.toThrow();
+    expect(() => loadConfig({ ...production, SMTP_TLS: 'tls' })).not.toThrow();
+    expect(() => loadConfig({ ...valid, NODE_ENV: 'development', SMTP_TLS: 'none' })).not.toThrow();
+  });
+});
