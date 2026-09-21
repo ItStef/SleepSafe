@@ -52,13 +52,15 @@ export class FakeServer implements AuthApi, VaultApi {
   private readonly vaults = new Map<string, StoredVault>();
   private listGate: Promise<void> | null = null;
   down = false;
+  // Nazivi poziva koji trenutno padaju (na primer 'vault.list'), dok ostali rade.
+  readonly failing = new Set<string>();
   preloginOverride: Partial<PreloginResponse> | null = null;
   failLogout = false;
   itemLimit = 10_000;
 
   private record(name: string, args: unknown): void {
     this.calls.push({ name, args });
-    if (this.down) {
+    if (this.down || this.failing.has(name)) {
       throw new ApiError(0, 'NETWORK', 'Network error');
     }
   }

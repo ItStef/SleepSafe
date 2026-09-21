@@ -1,5 +1,6 @@
 import { ApiError } from './api/http';
 import { ClientError } from './auth/errors';
+import { VaultError } from './vault/store';
 import { t } from './strings';
 
 export function describeError(error: unknown): string {
@@ -13,6 +14,22 @@ export function describeError(error: unknown): string {
         return t.errors.weakKdf;
       case 'VAULT_CORRUPT':
         return t.errors.vaultCorrupt;
+      default:
+        return t.errors.generic;
+    }
+  }
+  if (error instanceof VaultError) {
+    switch (error.code) {
+      case 'CONFLICT':
+        return t.errors.itemConflict;
+      case 'NOT_FOUND':
+        return t.errors.itemNotFound;
+      case 'INVALID_ITEM':
+        return t.errors.itemInvalid;
+      case 'TOO_LARGE':
+        return t.errors.itemTooLarge;
+      case 'VAULT_FULL':
+        return t.errors.vaultFull;
       default:
         return t.errors.generic;
     }

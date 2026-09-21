@@ -140,7 +140,7 @@ describe('App', () => {
     await user.type(field(/kod iz emaila/i), CODE);
     await user.click(button(/^potvrdi$/i));
 
-    expect(await screen.findByRole('heading', { name: /vault je otključan/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /vaš vault/i })).toBeInTheDocument();
     expect(screen.getByText(new RegExp(EMAIL))).toBeInTheDocument();
 
     await user.click(button(/^zaključaj$/i));
@@ -151,7 +151,7 @@ describe('App', () => {
     await user.clear(field(/^master lozinka$/i));
     await user.type(field(/^master lozinka$/i), PASSWORD);
     await user.click(button(/^otključaj$/i));
-    expect(await screen.findByRole('heading', { name: /vault je otključan/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /vaš vault/i })).toBeInTheDocument();
 
     await user.click(button(/^odjavi se$/i));
     expect(await screen.findByRole('tab', { name: /prijava/i })).toBeInTheDocument();

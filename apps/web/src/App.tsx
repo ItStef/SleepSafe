@@ -1,8 +1,8 @@
 import { useAuthState, useAuthStore } from './auth/context';
 import { CodeScreen } from './screens/CodeScreen';
-import { HomeScreen } from './screens/HomeScreen';
 import { SignedOutScreen } from './screens/SignedOutScreen';
 import { UnlockScreen } from './screens/UnlockScreen';
+import { VaultScreen } from './screens/VaultScreen';
 import { t } from './strings';
 
 function Screen() {
@@ -37,18 +37,19 @@ function Screen() {
     case 'locked':
       return <UnlockScreen email={state.email} />;
     case 'unlocked':
-      return <HomeScreen user={state.user} />;
+      return <VaultScreen user={state.user} vault={state.vault} />;
   }
 }
 
 export function App() {
+  const state = useAuthState();
   return (
     <main className="shell">
       <header className="brand">
         <h1>{t.appName}</h1>
         <p>{t.tagline}</p>
       </header>
-      <section className="card">
+      <section className={state.status === 'unlocked' ? 'card wide' : 'card'}>
         <Screen />
       </section>
     </main>

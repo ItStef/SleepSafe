@@ -55,12 +55,79 @@ export const t = {
     logout: 'Odjavi se',
   },
 
-  home: {
-    title: 'Vault je otključan',
-    body: 'Stavke vaulta stižu u sledećem koraku.',
+  vault: {
+    title: 'Vaš vault',
+    signedInAs: (email: string) => `Prijavljeni ste kao ${email}`,
     lock: 'Zaključaj',
     logout: 'Odjavi se',
-    signedInAs: (email: string) => `Prijavljeni ste kao ${email}`,
+    add: 'Nova stavka',
+    search: 'Pretraga',
+    searchHint: 'Naslov, korisničko ime, adresa ili beleške',
+    count: (shown: number, total: number) =>
+      shown === total ? `Stavki: ${total}` : `Prikazano ${shown} od ${total}`,
+    loading: 'Učitavam stavke…',
+    empty: 'Vault je prazan. Dodajte prvu stavku.',
+    noResults: 'Nema rezultata za ovu pretragu.',
+    loadFailed: 'Stavke nisu učitane.',
+    syncFailed: 'Osvežavanje nije uspelo. Prikazane su poslednje poznate stavke.',
+    retry: 'Pokušaj ponovo',
+    unreadable: (count: number) =>
+      count === 1
+        ? '1 stavka se ne može otvoriti (oštećena je ili je šifrovana drugim ključem).'
+        : `${count} stavki se ne može otvoriti (oštećene su ili su šifrovane drugim ključem).`,
+    untitledHint: 'Bez korisničkog imena',
+  },
+
+  item: {
+    back: 'Nazad',
+    edit: 'Izmeni',
+    delete: 'Obriši',
+    username: 'Korisničko ime',
+    password: 'Lozinka',
+    url: 'Adresa',
+    notes: 'Beleške',
+    updated: (when: string) => `Izmenjeno: ${when}`,
+    hidden: 'Sakrivena',
+    reveal: 'Prikaži',
+    conceal: 'Sakrij',
+    copy: 'Kopiraj',
+    copyUsernameLabel: 'Kopiraj korisničko ime',
+    copyPasswordLabel: 'Kopiraj lozinku',
+    copiedUsername: 'Korisničko ime je kopirano.',
+    copiedPassword: (seconds: number) =>
+      `Lozinka je kopirana. Klipbord se briše za ${seconds} sekundi.`,
+    copyFailed: 'Kopiranje nije uspelo. Pregledač nije dozvolio pristup klipbordu.',
+    unsafeUrl: 'Adresa nije http(s), pa se ne otvara kao link.',
+    confirmDelete: (title: string) => `Trajno obrisati „${title}“? Ovo se ne može poništiti.`,
+    confirmYes: 'Da, obriši',
+    confirmNo: 'Odustani',
+    empty: 'nije uneto',
+  },
+
+  form: {
+    newTitle: 'Nova stavka',
+    editTitle: 'Izmena stavke',
+    title: 'Naslov',
+    save: 'Sačuvaj',
+    saving: 'Čuvam…',
+    cancel: 'Odustani',
+    generator: 'Generator lozinki',
+    hideGenerator: 'Sakrij generator',
+  },
+
+  generator: {
+    length: 'Dužina',
+    lower: 'Mala slova (a-z)',
+    upper: 'Velika slova (A-Z)',
+    digits: 'Cifre (0-9)',
+    symbols: 'Simboli (!@#…)',
+    avoidAmbiguous: 'Izbegni slične znakove (I, l, 1, O, 0, o)',
+    suggestion: 'Predlog lozinke',
+    regenerate: 'Nova lozinka',
+    use: 'Koristi ovu lozinku',
+    entropy: (bits: number) => `Približno ${bits} bita entropije`,
+    invalid: (min: number, max: number) =>
+      `Izaberite bar jednu grupu znakova i dužinu od ${min} do ${max}.`,
   },
 
   errors: {
@@ -79,6 +146,12 @@ export const t = {
     weakKdf:
       'Server je predložio preslabu zaštitu lozinke. Prijava je prekinuta radi vaše bezbednosti.',
     vaultCorrupt: 'Vault na serveru je oštećen i ne može se otvoriti.',
+    itemConflict:
+      'Stavka je u međuvremenu izmenjena ili obrisana na drugom uređaju. Prikazana je najnovija verzija.',
+    itemNotFound: 'Stavka više ne postoji.',
+    itemInvalid: 'Naslov je obavezan, a polja ne smeju biti predugačka.',
+    itemTooLarge: 'Stavka je prevelika za čuvanje.',
+    vaultFull: 'Dostignut je najveći dozvoljeni broj stavki.',
     generic: 'Došlo je do greške. Pokušajte ponovo.',
   },
 } as const;

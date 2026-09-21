@@ -8,6 +8,7 @@ interface FieldProps {
   autoComplete: string;
   disabled?: boolean;
   autoFocus?: boolean;
+  maxLength?: number;
 }
 
 export function TextField({
@@ -18,7 +19,8 @@ export function TextField({
   type = 'text',
   disabled,
   autoFocus,
-}: FieldProps & { type?: 'text' | 'email' }) {
+  maxLength,
+}: FieldProps & { type?: 'text' | 'email' | 'search' }) {
   const id = useId();
   return (
     <div className="field">
@@ -30,8 +32,32 @@ export function TextField({
         autoComplete={autoComplete}
         autoFocus={autoFocus}
         disabled={disabled}
+        maxLength={maxLength}
         spellCheck={false}
         autoCapitalize="none"
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </div>
+  );
+}
+
+export function TextAreaField({
+  label,
+  value,
+  onChange,
+  disabled,
+  maxLength,
+}: Omit<FieldProps, 'autoComplete' | 'autoFocus'>) {
+  const id = useId();
+  return (
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
+      <textarea
+        id={id}
+        value={value}
+        rows={4}
+        disabled={disabled}
+        maxLength={maxLength}
         onChange={(event) => onChange(event.target.value)}
       />
     </div>
@@ -45,6 +71,7 @@ export function PasswordField({
   autoComplete,
   disabled,
   autoFocus,
+  maxLength,
 }: FieldProps) {
   const id = useId();
   const [visible, setVisible] = useState(false);
@@ -59,6 +86,7 @@ export function PasswordField({
           autoComplete={autoComplete}
           autoFocus={autoFocus}
           disabled={disabled}
+          maxLength={maxLength}
           spellCheck={false}
           autoCapitalize="none"
           onChange={(event) => onChange(event.target.value)}

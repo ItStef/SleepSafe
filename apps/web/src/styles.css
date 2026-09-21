@@ -120,7 +120,10 @@ h2 {
 
 input[type='text'],
 input[type='email'],
-input[type='password'] {
+input[type='password'],
+input[type='search'],
+input[type='number'],
+textarea {
   width: 100%;
   padding: 10px 12px;
   font: inherit;
@@ -216,6 +219,151 @@ button:disabled {
 .message.info {
   color: var(--info-text);
   background: var(--info-bg);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 96px;
+}
+
+.card.wide {
+  max-width: 720px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.toolbar > div:first-child {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.toolbar .hint {
+  overflow-wrap: anywhere;
+}
+
+.toolbar .row > * {
+  flex: 0 0 auto;
+}
+
+.grow {
+  flex: 1;
+}
+
+.entries {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+button.entry {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  gap: 2px;
+  color: var(--text);
+  text-align: left;
+  background: transparent;
+  border-color: var(--border);
+}
+
+.entry-title {
+  font-weight: 600;
+}
+
+.entry-sub {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+}
+
+.detail dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.detail dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.value {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.mono,
+.generated {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+.notes {
+  white-space: pre-wrap;
+}
+
+.generator {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.generated {
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 1.05rem;
+  background: var(--bg);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+
+a {
+  color: var(--accent);
+}
+
+button.danger {
+  color: var(--accent-text);
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+button.link {
+  padding: 0;
+  color: inherit;
+  text-decoration: underline;
+  background: none;
+  border: 0;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 @media (prefers-reduced-motion: reduce) {
