@@ -7,6 +7,9 @@ import {
 } from '@sleepsafe/crypto';
 import type {
   ChallengeResponse,
+  ChangePasswordRequest,
+  DeleteAccountRequest,
+  ListSessionsResponse,
   ItemEnvelope,
   ListItemsResponse,
   LoginRequest,
@@ -31,6 +34,15 @@ interface StoredUser {
   verified: boolean;
 }
 
+interface FakeSession {
+  id: string;
+  email: string;
+  userAgent: string | null;
+  createdAt: string;
+  lastUsedAt: string;
+  revoked: boolean;
+}
+
 interface StoredItem {
   revision: number;
   envelope: ItemEnvelope | null;
@@ -42,17 +54,17 @@ interface StoredVault {
   items: Map<string, StoredItem>;
 }
 
-// Ponasa se kao pravi server (routes/vault.ts): isti kursori, tombstone zapisi, 409/404/422.
 export class FakeServer implements AuthApi, VaultApi {
   readonly users = new Map<string, StoredUser>();
   readonly calls: { name: string; args: unknown }[] = [];
   private readonly challenges = new Map<string, { email: string; purpose: 'verify' | 'login' }>();
   private sessionEmail: string | null = null;
   private token = false;
+  private readonly sessions: FakeSession[] = [];
+  private currentSessionId: string | null = null;
   private readonly vaults = new Map<string, StoredVault>();
   private listGate: Promise<void> | null = null;
   down = false;
-  // Nazivi poziva koji trenutno padaju (na primer 'vault.list'), dok ostali rade.
   readonly failing = new Set<string>();
   preloginOverride: Partial<PreloginResponse> | null = null;
   failLogout = false;
@@ -92,6 +104,25 @@ export class FakeServer implements AuthApi, VaultApi {
 
   startSession(email: string): void {
     this.sessionEmail = email;
+    this.currentSessionId = this.openSession(email);
+  }
+
+  private openSession(email: string, userAgent: string | null = 'Test Browser'): string {
+    const now = new Date().toISOString();
+    const session = {
+      id: crypto.randomUUID(),
+      email,
+      userAgent,
+      createdAt: now,
+      lastUsedAt: now,
+      revoked: false,
+    };
+    this.sessions.push(session);
+    return session.id;
+  }
+
+  seedOtherSession(email: string, userAgent: string | null): string {
+    return this.openSession(email, userAgent);
   }
 
   async changePasswordElsewhere(email: string, newPassword: string) {
@@ -163,6 +194,7 @@ export class FakeServer implements AuthApi, VaultApi {
     const challenge = this.takeChallenge(body, 'login');
     this.sessionEmail = challenge.email;
     this.token = true;
+    this.currentSessionId = this.openSession(challenge.email);
   }
 
   async refresh(): Promise<RefreshResult> {
@@ -176,6 +208,80 @@ export class FakeServer implements AuthApi, VaultApi {
   async logout(): Promise<void> {
     this.calls.push({ name: 'logout', args: null });
     if (this.failLogout) throw new ApiError(0, 'NETWORK', 'Network error');
+    this.sessionEmail = null;
+    this.token = false;
+  }
+
+  async listSessions(): Promise<ListSessionsResponse> {
+    this.record('listSessions', null);
+    this.currentUserId();
+    return {
+      sessions: this.sessions
+        .filter((session) => session.email === this.sessionEmail && !session.revoked)
+        .map((session) => ({
+          id: session.id,
+          userAgent: session.userAgent,
+          createdAt: session.createdAt,
+          lastUsedAt: session.lastUsedAt,
+          current: session.id === this.currentSessionId,
+        })),
+    };
+  }
+
+  async revokeSession(id: string): Promise<void> {
+    this.record('revokeSession', { id });
+    this.currentUserId();
+    const session = this.sessions.find(
+      (entry) => entry.id === id && entry.email === this.sessionEmail,
+    );
+    if (session) session.revoked = true;
+  }
+
+  async revokeOtherSessions(): Promise<void> {
+    this.record('revokeOtherSessions', null);
+    this.currentUserId();
+    for (const session of this.sessions) {
+      if (session.email === this.sessionEmail && session.id !== this.currentSessionId) {
+        session.revoked = true;
+      }
+    }
+  }
+
+  async changePassword(body: ChangePasswordRequest): Promise<void> {
+    this.record('changePassword', body);
+    this.currentUserId();
+    const user = this.users.get(this.sessionEmail ?? '');
+    if (!user || body.currentAuthKey !== user.request.authKey) {
+      throw new ApiError(403, 'INVALID_PASSWORD', 'Invalid password');
+    }
+    user.request = {
+      ...user.request,
+      authKey: body.newAuthKey,
+      kdfSalt: body.kdfSalt,
+      kdfMemoryKiB: body.kdfMemoryKiB,
+      kdfIterations: body.kdfIterations,
+      kdfParallelism: body.kdfParallelism,
+      wrappedVaultKey: body.wrappedVaultKey,
+    };
+    for (const session of this.sessions) {
+      if (session.email === this.sessionEmail && session.id !== this.currentSessionId) {
+        session.revoked = true;
+      }
+    }
+  }
+
+  async deleteAccount(body: DeleteAccountRequest): Promise<void> {
+    this.record('deleteAccount', body);
+    const userId = this.currentUserId();
+    const user = this.users.get(this.sessionEmail ?? '');
+    if (!user || body.authKey !== user.request.authKey) {
+      throw new ApiError(403, 'INVALID_PASSWORD', 'Invalid password');
+    }
+    this.users.delete(user.request.email);
+    this.vaults.delete(userId);
+    for (const session of this.sessions) {
+      if (session.email === user.request.email) session.revoked = true;
+    }
     this.sessionEmail = null;
     this.token = false;
   }

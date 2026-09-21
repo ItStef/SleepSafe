@@ -1,27 +1,32 @@
 import {
   CryptoError,
   DEFAULT_KDF_PARAMS,
+  type Envelope,
   type KdfParams,
   assertAcceptableKdfParams,
   createVault,
   fromBase64Url,
   generateSalt,
+  rewrapVaultKey,
   toBase64Url,
   unwrapVaultKey,
 } from '@sleepsafe/crypto';
 import {
+  type ListSessionsResponse,
   type MeResponse,
   type RegisterRequest,
   emailSchema,
   wrappedKeyEnvelopeSchema,
 } from '@sleepsafe/shared';
 import type { AuthApi } from '../api/auth';
+import { ApiError } from '../api/http';
 import type { VaultApi } from '../api/vault';
 import type { KeyDeriver } from '../crypto/deriver';
 import { VaultStore } from '../vault/store';
 import { ClientError, type ClientErrorCode } from './errors';
+import { strongerKdfParams } from './policy';
 
-export type Notice = 'emailVerified' | 'sessionExpired' | 'serverUnavailable';
+export type Notice = 'emailVerified' | 'sessionExpired' | 'serverUnavailable' | 'accountDeleted';
 
 export interface SessionUser {
   id: string;
@@ -247,6 +252,114 @@ export class AuthStore {
     authKey.fill(0);
     const vaultKey = await openVault(profile, kek, 'WRONG_PASSWORD');
     this.open(profile, vaultKey);
+  }
+  // --- Nalog: sesije, promena master lozinke, brisanje naloga ---------------------------------
+
+  listSessions(): Promise<ListSessionsResponse> {
+    this.require('unlocked');
+    return this.deps.api.listSessions();
+  }
+
+  revokeSession(id: string): Promise<void> {
+    this.require('unlocked');
+    return this.deps.api.revokeSession(id);
+  }
+
+  revokeOtherSessions(): Promise<void> {
+    this.require('unlocked');
+    return this.deps.api.revokeOtherSessions();
+  }
+
+  // Master lozinka se proverava lokalno (otvara se Vault Key), pa pogresna lozinka ne stize do
+  // servera i ne trosi pokusaje. Profil se uzima svez, jer je lozinka mozda promenjena drugde.
+  private async openWithPassword(password: string) {
+    this.require('unlocked');
+    const profile = await this.deps.api.me();
+    const params = assertSafeParams({
+      memoryKiB: profile.kdfMemoryKiB,
+      iterations: profile.kdfIterations,
+      parallelism: profile.kdfParallelism,
+    });
+    const { authKey, kek } = await this.deps.deriver.derive(
+      password,
+      fromBase64Url(profile.kdfSalt),
+      params,
+    );
+    try {
+      await unwrapVaultKey(profile.wrappedVaultKey, kek);
+    } catch (error) {
+      authKey.fill(0);
+      if (error instanceof CryptoError) {
+        throw new ClientError('WRONG_PASSWORD');
+      }
+      throw error;
+    }
+    return { profile, params, authKey, kek };
+  }
+
+  async confirmPassword(password: string): Promise<void> {
+    const { authKey } = await this.openWithPassword(password);
+    authKey.fill(0);
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    const { profile, params, authKey, kek } = await this.openWithPassword(currentPassword);
+    const nextParams = strongerKdfParams(params, this.deps.kdfParams ?? DEFAULT_KDF_PARAMS);
+    const salt = generateSalt();
+    const next = await this.deps.deriver.derive(newPassword, salt, nextParams);
+
+    let wrapped: Envelope;
+    try {
+      wrapped = await rewrapVaultKey(profile.wrappedVaultKey, kek, next.kek);
+      await unwrapVaultKey(wrapped, next.kek);
+    } catch (error) {
+      authKey.fill(0);
+      next.authKey.fill(0);
+      if (error instanceof CryptoError) {
+        throw new ClientError('VAULT_CORRUPT');
+      }
+      throw error;
+    }
+    try {
+      await this.deps.api.changePassword({
+        currentAuthKey: toBase64Url(authKey),
+        newAuthKey: toBase64Url(next.authKey),
+        kdfSalt: toBase64Url(salt),
+        kdfMemoryKiB: nextParams.memoryKiB,
+        kdfIterations: nextParams.iterations,
+        kdfParallelism: nextParams.parallelism,
+        wrappedVaultKey: wrappedKeyEnvelopeSchema.parse(wrapped),
+      });
+    } catch (error) {
+      if (error instanceof ApiError && error.code === 'INVALID_PASSWORD') {
+        throw new ClientError('WRONG_PASSWORD');
+      }
+      throw error;
+    } finally {
+      authKey.fill(0);
+      next.authKey.fill(0);
+    }
+  }
+
+  async deleteAccount(password: string): Promise<void> {
+    const { authKey } = await this.openWithPassword(password);
+    try {
+      await this.deps.api.deleteAccount({ authKey: toBase64Url(authKey) });
+    } catch (error) {
+      if (error instanceof ApiError && error.code === 'INVALID_PASSWORD') {
+        throw new ClientError('WRONG_PASSWORD');
+      }
+      throw error;
+    } finally {
+      authKey.fill(0);
+    }
+    try {
+      await this.deps.api.logout();
+    } catch {
+      // Sesija je vec obrisana na serveru: lokalno se svejedno sve brise.
+    }
+    this.clearSecrets();
+    this.setState({ status: 'signedOut', notice: 'accountDeleted' });
   }
 
   lock(): void {

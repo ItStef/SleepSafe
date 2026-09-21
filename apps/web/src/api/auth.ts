@@ -1,11 +1,15 @@
 import {
   type ChallengeResponse,
+  type ChangePasswordRequest,
+  type DeleteAccountRequest,
+  type ListSessionsResponse,
   type LoginRequest,
   type MeResponse,
   type PreloginResponse,
   type RegisterRequest,
   type VerifyCodeRequest,
   accessTokenResponseSchema,
+  listSessionsResponseSchema,
   challengeResponseSchema,
   meResponseSchema,
   preloginResponseSchema,
@@ -21,6 +25,11 @@ export interface AuthApi {
   refresh(): Promise<RefreshResult>;
   logout(): Promise<void>;
   me(): Promise<MeResponse>;
+  listSessions(): Promise<ListSessionsResponse>;
+  revokeSession(id: string): Promise<void>;
+  revokeOtherSessions(): Promise<void>;
+  changePassword(body: ChangePasswordRequest): Promise<void>;
+  deleteAccount(body: DeleteAccountRequest): Promise<void>;
 }
 
 export function createAuthApi(http: HttpClient): AuthApi {
@@ -57,5 +66,11 @@ export function createAuthApi(http: HttpClient): AuthApi {
       }
     },
     me: () => http.request('GET', '/auth/me', { schema: meResponseSchema }),
+    listSessions: () =>
+      http.request('GET', '/auth/sessions', { schema: listSessionsResponseSchema }),
+    revokeSession: (id) => http.request('DELETE', `/auth/sessions/${id}`),
+    revokeOtherSessions: () => http.request('POST', '/auth/sessions/revoke-others'),
+    changePassword: (body) => http.request('POST', '/auth/change-password', { body }),
+    deleteAccount: (body) => http.request('POST', '/auth/delete-account', { body }),
   };
 }

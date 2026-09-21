@@ -366,6 +366,53 @@ button.link {
   white-space: nowrap;
 }
 
+.tabs {
+  flex-wrap: wrap;
+}
+
+.sessions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.session {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.session p {
+  margin: 0;
+}
+
+.session-name {
+  font-weight: 600;
+}
+
+.badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  color: var(--info-text);
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--info-bg);
+  border-radius: 999px;
+}
+
+.divider {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 4px 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

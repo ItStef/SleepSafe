@@ -18,6 +18,7 @@ export const t = {
     emailVerified: 'Email je potvrđen. Sada se možete prijaviti.',
     sessionExpired: 'Sesija je istekla ili je odjavljena. Prijavite se ponovo.',
     serverUnavailable: 'Server trenutno nije dostupan. Pokušajte ponovo za nekoliko trenutaka.',
+    accountDeleted: 'Nalog i svi podaci su trajno obrisani.',
   },
 
   login: {
@@ -130,7 +131,85 @@ export const t = {
       `Izaberite bar jednu grupu znakova i dužinu od ${min} do ${max}.`,
   },
 
+  account: {
+    open: 'Nalog',
+    title: 'Nalog',
+    back: 'Nazad',
+    tabs: {
+      sessions: 'Uređaji',
+      password: 'Lozinka',
+      transfer: 'Izvoz i uvoz',
+      delete: 'Brisanje',
+    },
+    sessions: {
+      title: 'Prijavljeni uređaji',
+      hint: 'Ako ne prepoznajete neki uređaj, odjavite ga i promenite master lozinku.',
+      loading: 'Učitavam…',
+      current: 'Ovaj uređaj',
+      created: (when: string) => `Prijavljen: ${when}`,
+      lastUsed: (when: string) => `Poslednja aktivnost: ${when}`,
+      revoke: 'Odjavi',
+      revokeLabel: (name: string) => `Odjavi uređaj ${name}`,
+      revokeOthers: 'Odjavi sve ostale',
+      none: 'Nema drugih prijavljenih uređaja.',
+    },
+    password: {
+      title: 'Promena master lozinke',
+      intro:
+        'Nova lozinka važi odmah. Svi ostali uređaji se odjavljuju, a vaši podaci ostaju netaknuti.',
+      current: 'Trenutna master lozinka',
+      next: 'Nova master lozinka',
+      confirm: 'Ponovite novu master lozinku',
+      submit: 'Promeni lozinku',
+      working: 'Menjam…',
+      done: 'Master lozinka je promenjena. Ostali uređaji su odjavljeni.',
+    },
+    delete: {
+      title: 'Brisanje naloga',
+      warning: 'Nalog i sve šifrovane stavke se trajno brišu sa servera. Ovo se ne može poništiti.',
+      password: 'Master lozinka',
+      acknowledge: 'Razumem da se nalog i svi podaci brišu trajno, bez mogućnosti povraćaja.',
+      submit: 'Trajno obriši nalog',
+      working: 'Brišem…',
+    },
+  },
+
+  transfer: {
+    exportTitle: 'Izvoz',
+    exportWarning:
+      'Izvezeni fajl NIJE šifrovan: svaka lozinka u njemu je vidljiva. Čuvajte ga kratko i obrišite ga čim završite.',
+    exportAcknowledge: 'Razumem da izvezeni fajl nije šifrovan.',
+    password: 'Master lozinka (potvrda)',
+    exportJson: 'Izvezi JSON',
+    exportCsv: 'Izvezi CSV',
+    exportWorking: 'Izvozim…',
+    exportEmpty: 'Vault je prazan: nema šta da se izveze.',
+    exported: (count: number) => `Izvezeno stavki: ${count}.`,
+    importTitle: 'Uvoz',
+    importIntro:
+      'Podržani su JSON izvoz iz SleepSafe-a i CSV iz drugih menadžera lozinki (Chrome, Bitwarden, 1Password, LastPass, KeePass). Stavke se šifruju u ovom pregledaču.',
+    chooseFile: 'Izaberite fajl za uvoz',
+    found: (count: number, skipped: number) =>
+      skipped === 0
+        ? `Pronađeno stavki: ${count}.`
+        : `Pronađeno stavki: ${count}. Preskočeno zbog neispravnih podataka: ${skipped}.`,
+    skipDuplicates: 'Preskoči stavke koje već postoje',
+    importButton: (count: number) => `Uvezi ${count} stavki`,
+    progress: (done: number, total: number) => `Uvezeno ${done} od ${total}…`,
+    result: (created: number, failed: number, duplicates: number) =>
+      `Uvezeno: ${created}. Neuspešno: ${failed}. Preskočeno kao duplikat: ${duplicates}.`,
+    stoppedFull: 'Uvoz je prekinut: dostignut je najveći dozvoljeni broj stavki.',
+    stoppedNetwork: 'Uvoz je prekinut: server nije dostupan. Ono što je uvezeno ostaje u vaultu.',
+    stoppedLocked: 'Uvoz je prekinut jer je vault zaključan.',
+  },
+
   errors: {
+    importInvalid: 'Fajl se ne može pročitati (neispravan JSON ili CSV).',
+    importUnknown: 'Oblik fajla nije prepoznat. Očekuje se SleepSafe JSON ili CSV sa kolonama.',
+    importEmpty: 'U fajlu nema nijedne ispravne stavke.',
+    importTooLarge: 'Fajl je prevelik (najviše 5 MB).',
+    importTooMany: 'U fajlu ima previše stavki (najviše 10 000).',
+
     invalidEmail: 'Unesite ispravnu email adresu.',
     passwordTooShort: (min: number) => `Master lozinka mora imati najmanje ${min} znakova.`,
     passwordMismatch: 'Lozinke se ne poklapaju.',
