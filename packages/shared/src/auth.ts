@@ -25,20 +25,6 @@ export const kdfParamsSchema = z.strictObject({
   kdfParallelism: z.number().int().min(1).max(64),
 });
 
-// Kodovi za oporavak: svaki kod (samo klijent ga zna) daje svoj Auth kljuc za dokaz posedovanja i
-// svoj KEK kojim je umotan isti Vault Key. Server nikad ne vidi kod, samo ove izvedene vrednosti.
-export const RECOVERY_CODE_COUNT = 20;
-
-export const recoveryBundleSchema = z.strictObject({
-  ...kdfParamsSchema.shape,
-  codes: z
-    .array(z.strictObject({ authKey: authKeySchema, wrappedVaultKey: wrappedKeyEnvelopeSchema }))
-    .length(RECOVERY_CODE_COUNT)
-    .refine((codes) => new Set(codes.map((code) => code.authKey)).size === codes.length, {
-      message: 'Recovery codes must be distinct',
-    }),
-});
-
 export const preloginRequestSchema = z.strictObject({ email: emailSchema });
 export const preloginResponseSchema = kdfParamsSchema;
 
@@ -47,7 +33,6 @@ export const registerRequestSchema = z.strictObject({
   authKey: authKeySchema,
   ...kdfParamsSchema.shape,
   wrappedVaultKey: wrappedKeyEnvelopeSchema,
-  recovery: recoveryBundleSchema,
 });
 
 export const verifyCodeRequestSchema = z.strictObject({
@@ -71,7 +56,6 @@ export const meResponseSchema = z.strictObject({
   wrappedVaultKey: wrappedKeyEnvelopeSchema,
 });
 
-export type RecoveryBundle = z.infer<typeof recoveryBundleSchema>;
 export type PreloginRequest = z.infer<typeof preloginRequestSchema>;
 export type PreloginResponse = z.infer<typeof preloginResponseSchema>;
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;

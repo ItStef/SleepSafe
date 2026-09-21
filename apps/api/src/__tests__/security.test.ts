@@ -4,21 +4,15 @@ import { describe, expect, it } from 'vitest';
 import { AppError } from '../errors';
 import {
   fakeKdfSalt,
-  fakeRecoverySalt,
   generateOtp,
   generateRefreshToken,
-  generateResetToken,
   hashAuthKey,
   hashOtp,
-  hashRecoveryAuth,
   hashRefreshToken,
-  hashResetToken,
   signAccessToken,
   verifyAccessToken,
   verifyAuthKey,
   verifyOtp,
-  verifyRecoveryAuth,
-  verifyResetToken,
 } from '../security';
 
 const pepper = 'p'.repeat(32);
@@ -221,51 +215,5 @@ describe('Lazna so za nepostojece naloge', () => {
 
   it('izgleda isto kao prava so (16 bajtova u base64url)', () => {
     expect(fakeKdfSalt('niko@example.com', pepper)).toMatch(/^[A-Za-z0-9_-]{22}$/);
-  });
-});
-
-describe('Kodovi za oporavak (server)', () => {
-  it('hes dokaza je stalan, zavisi od tajne servera i ima 43 znaka', () => {
-    const hash = hashRecoveryAuth(authKey, pepper);
-    expect(hash).toBe(hashRecoveryAuth(authKey, pepper));
-    expect(hash).not.toBe(hashRecoveryAuth(authKey, otherPepper));
-    expect(hash).toHaveLength(43);
-    expect(verifyRecoveryAuth(authKey, hash, pepper)).toBe(true);
-    expect(verifyRecoveryAuth(authKey, hash, otherPepper)).toBe(false);
-    expect(verifyRecoveryAuth(toBase64Url(new Uint8Array(32).fill(8)), hash, pepper)).toBe(false);
-  });
-
-  it('razdvajanje domena: isti ulaz daje razlicit hes za lozinku i za kod za oporavak', () => {
-    expect(hashRecoveryAuth(authKey, pepper)).not.toBe(hashAuthKey(authKey, pepper));
-  });
-
-  it('odbija dokaz pogresne duzine i neispravan hes bez izuzetka pri proveri', () => {
-    expect(() => hashRecoveryAuth('kratak', pepper)).toThrow();
-    expect(verifyRecoveryAuth('kratak', hashRecoveryAuth(authKey, pepper), pepper)).toBe(false);
-    expect(verifyRecoveryAuth(authKey, '!!!', pepper)).toBe(false);
-  });
-
-  it('token za promenu lozinke: nasumican, 43 znaka, vezan za svoj id i tajnu servera', () => {
-    const token = generateResetToken();
-    expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/);
-    expect(generateResetToken()).not.toBe(token);
-
-    const id = '3f2b8c1e-7a44-4d0b-9a55-1c2d3e4f5a6b';
-    const otherId = '4f2b8c1e-7a44-4d0b-9a55-1c2d3e4f5a6b';
-    const hash = hashResetToken(token, id, pepper);
-    expect(verifyResetToken(token, id, hash, pepper)).toBe(true);
-    expect(verifyResetToken(token, otherId, hash, pepper)).toBe(false);
-    expect(verifyResetToken(token, id, hash, otherPepper)).toBe(false);
-    expect(verifyResetToken(generateResetToken(), id, hash, pepper)).toBe(false);
-    expect(verifyResetToken(token, id, '!!!', pepper)).toBe(false);
-  });
-
-  it('lazna so za oporavak je stalna po adresi, razlicita po adresi i tajni i drugacija od lazne soli za prijavu', () => {
-    const salt = fakeRecoverySalt('a@example.com', pepper);
-    expect(salt).toBe(fakeRecoverySalt('a@example.com', pepper));
-    expect(salt).not.toBe(fakeRecoverySalt('b@example.com', pepper));
-    expect(salt).not.toBe(fakeRecoverySalt('a@example.com', otherPepper));
-    expect(salt).not.toBe(fakeKdfSalt('a@example.com', pepper));
-    expect(salt).toMatch(/^[A-Za-z0-9_-]{22}$/);
   });
 });

@@ -18,7 +18,6 @@ async function setup(prepare?: (server: FakeServer) => Promise<void>) {
     vaultApi: server,
     deriver: inlineDeriver,
     kdfParams: TEST_KDF,
-    recoveryCodeCount: 3,
   });
   await store.boot();
   const user = userEvent.setup();
@@ -121,13 +120,6 @@ describe('App', () => {
     await user.type(field(/ponovite/i), PASSWORD);
     await user.click(screen.getByRole('checkbox'));
     await user.click(button(/napravi nalog/i));
-
-    expect(
-      await screen.findByRole('heading', { name: /sačuvajte kodove za oporavak/i }),
-    ).toBeInTheDocument();
-    expect(button(/^nastavi$/i)).toBeDisabled();
-    await user.click(screen.getByRole('checkbox', { name: /sačuvao/i }));
-    await user.click(button(/^nastavi$/i));
 
     expect(await screen.findByRole('heading', { name: /potvrdite email/i })).toBeInTheDocument();
     await user.type(field(/kod iz emaila/i), '000000');

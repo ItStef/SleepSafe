@@ -3,21 +3,12 @@ import {
   type LoginRequest,
   type MeResponse,
   type PreloginResponse,
-  type RecoveryResetRequest,
-  type RecoveryStartResponse,
-  type RecoveryStatus,
-  type RecoveryVerifyRequest,
-  type RecoveryVerifyResponse,
   type RegisterRequest,
-  type ReplaceRecoveryCodesRequest,
   type VerifyCodeRequest,
   accessTokenResponseSchema,
   challengeResponseSchema,
   meResponseSchema,
   preloginResponseSchema,
-  recoveryStartResponseSchema,
-  recoveryStatusSchema,
-  recoveryVerifyResponseSchema,
 } from '@sleepsafe/shared';
 import type { HttpClient, RefreshResult } from './http';
 
@@ -30,11 +21,6 @@ export interface AuthApi {
   refresh(): Promise<RefreshResult>;
   logout(): Promise<void>;
   me(): Promise<MeResponse>;
-  recoveryStart(email: string): Promise<RecoveryStartResponse>;
-  recoveryVerify(body: RecoveryVerifyRequest): Promise<RecoveryVerifyResponse>;
-  recoveryReset(body: RecoveryResetRequest): Promise<void>;
-  recoveryStatus(): Promise<RecoveryStatus>;
-  replaceRecoveryCodes(body: ReplaceRecoveryCodesRequest): Promise<void>;
 }
 
 export function createAuthApi(http: HttpClient): AuthApi {
@@ -71,21 +57,5 @@ export function createAuthApi(http: HttpClient): AuthApi {
       }
     },
     me: () => http.request('GET', '/auth/me', { schema: meResponseSchema }),
-    recoveryStart: (email) =>
-      http.request('POST', '/auth/recovery/start', {
-        auth: false,
-        body: { email },
-        schema: recoveryStartResponseSchema,
-      }),
-    recoveryVerify: (body) =>
-      http.request('POST', '/auth/recovery/verify', {
-        auth: false,
-        body,
-        schema: recoveryVerifyResponseSchema,
-      }),
-    recoveryReset: (body) => http.request('POST', '/auth/recovery/reset', { auth: false, body }),
-    recoveryStatus: () =>
-      http.request('GET', '/auth/recovery-codes', { schema: recoveryStatusSchema }),
-    replaceRecoveryCodes: (body) => http.request('POST', '/auth/recovery-codes', { body }),
   };
 }

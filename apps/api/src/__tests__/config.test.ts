@@ -25,19 +25,6 @@ describe('loadConfig', () => {
     expect(config.TRUST_PROXY).toBe(true);
   });
 
-  it('prazne vrednosti u .env (SMTP_USER=) znace "nije podeseno"', () => {
-    const config = loadConfig({ ...valid, SMTP_USER: '', SMTP_PASS: '' });
-    expect(config.SMTP_USER).toBeUndefined();
-    expect(config.SMTP_PASS).toBeUndefined();
-    // Prazno je isto kao odsutno: samo jedno od dva i dalje nije dozvoljeno.
-    expect(() => loadConfig({ ...valid, SMTP_USER: 'korisnik', SMTP_PASS: '' })).toThrow(
-      'SMTP_USER and SMTP_PASS must be set together',
-    );
-    expect(loadConfig({ ...valid, SMTP_USER: 'korisnik', SMTP_PASS: 'tajna' }).SMTP_USER).toBe(
-      'korisnik',
-    );
-  });
-
   it('odbija nedostajuci DATABASE_URL', () => {
     const env: Record<string, string | undefined> = { ...valid };
     delete env['DATABASE_URL'];

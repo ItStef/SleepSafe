@@ -4,7 +4,6 @@ import {
   createVault,
   deriveKeys,
   generateSalt,
-  randomBytes,
   rewrapVaultKey,
   toBase64Url,
 } from '@sleepsafe/crypto';
@@ -65,25 +64,6 @@ export async function createTestEnv(overrides: Record<string, string> = {}): Pro
   };
 }
 
-// Za testove koji ne proveravaju oporavak: oblik je ispravan, a kljuceva ne izvodi iz pravih kodova
-// (20 Argon2 izvodjenja po nalogu bi usporila stotine registracija).
-export function fakeRecoveryBundle() {
-  return {
-    kdfSalt: toBase64Url(generateSalt()),
-    kdfMemoryKiB: CLIENT_KDF.memoryKiB,
-    kdfIterations: CLIENT_KDF.iterations,
-    kdfParallelism: CLIENT_KDF.parallelism,
-    codes: Array.from({ length: 20 }, () => ({
-      authKey: toBase64Url(randomBytes(32)),
-      wrappedVaultKey: {
-        v: 1 as const,
-        iv: toBase64Url(randomBytes(12)),
-        ct: toBase64Url(randomBytes(48)),
-      },
-    })),
-  };
-}
-
 export async function prepareRegistration(email: string, password: string) {
   const salt = generateSalt();
   const { authKey, kek } = await deriveKeys(password, salt, CLIENT_KDF);
@@ -97,7 +77,6 @@ export async function prepareRegistration(email: string, password: string) {
       kdfIterations: CLIENT_KDF.iterations,
       kdfParallelism: CLIENT_KDF.parallelism,
       wrappedVaultKey,
-      recovery: fakeRecoveryBundle(),
     },
     salt,
     kek,
@@ -146,10 +125,7 @@ export interface LoggedIn {
   refreshToken: string;
 }
 
-export async function logIn(
-  env: TestEnv,
-  registration: { body: { email: string; authKey: string } },
-): Promise<LoggedIn> {
+export async function logIn(env: TestEnv, registration: Registration): Promise<LoggedIn> {
   const { email, authKey } = registration.body;
   const login = await env.app.inject({
     method: 'POST',
