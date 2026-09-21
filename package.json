@@ -14,7 +14,12 @@
     "db:generate": "pnpm --filter @sleepsafe/api db:generate",
     "db:migrate": "pnpm --filter @sleepsafe/api db:migrate",
     "dev:api": "pnpm --filter @sleepsafe/api dev",
-    "dev:web": "pnpm --filter @sleepsafe/web dev"
+    "dev:web": "pnpm --filter @sleepsafe/web dev",
+    "stack:up": "docker compose --env-file .env -f infra/docker-compose.yml --profile app up -d --build",
+    "stack:demo": "docker compose --env-file .env -f infra/docker-compose.yml -f infra/docker-compose.demo.yml --profile app up -d --build",
+    "stack:down": "docker compose --env-file .env -f infra/docker-compose.yml --profile app down",
+    "stack:logs": "docker compose --env-file .env -f infra/docker-compose.yml --profile app logs -f --tail=100",
+    "check:env": "node scripts/check-env.mjs"
   },
   "author": "",
   "license": "ISC",

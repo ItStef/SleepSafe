@@ -5,6 +5,7 @@ import { MIN_MASTER_PASSWORD_LENGTH } from '../auth/policy';
 import type { Notice } from '../auth/store';
 import { useAction } from '../hooks';
 import { t } from '../strings';
+import { RecoveryStartForm } from './RecoveryScreens';
 
 function LoginForm() {
   const store = useAuthStore();
@@ -114,7 +115,7 @@ function RegisterForm() {
 }
 
 export function SignedOutScreen({ notice }: { notice: Notice | undefined }) {
-  const [tab, setTab] = useState<'login' | 'register'>('login');
+  const [tab, setTab] = useState<'login' | 'register' | 'recover'>('login');
   return (
     <div className="stack">
       {notice ? (
@@ -122,25 +123,36 @@ export function SignedOutScreen({ notice }: { notice: Notice | undefined }) {
           {t.notices[notice]}
         </p>
       ) : null}
-      <div className="tabs" role="tablist">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'login'}
-          onClick={() => setTab('login')}
-        >
-          {t.tabs.login}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'register'}
-          onClick={() => setTab('register')}
-        >
-          {t.tabs.register}
-        </button>
-      </div>
-      {tab === 'login' ? <LoginForm /> : <RegisterForm />}
+      {tab === 'recover' ? (
+        <RecoveryStartForm onBack={() => setTab('login')} />
+      ) : (
+        <>
+          <div className="tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === 'login'}
+              onClick={() => setTab('login')}
+            >
+              {t.tabs.login}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === 'register'}
+              onClick={() => setTab('register')}
+            >
+              {t.tabs.register}
+            </button>
+          </div>
+          {tab === 'login' ? <LoginForm /> : <RegisterForm />}
+          {tab === 'login' ? (
+            <button type="button" className="link" onClick={() => setTab('recover')}>
+              {t.login.forgot}
+            </button>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }

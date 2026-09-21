@@ -10,6 +10,8 @@ datasource db {
 enum OtpPurpose {
   EMAIL_VERIFICATION
   LOGIN
+  RECOVERY
+  RECOVERY_RESET
 }
 
 model User {
@@ -25,6 +27,12 @@ model User {
   wrappedVaultKey Json
   vaultRevision   Int    @default(0)
 
+  // Parametri za izvodjenje kljuceva iz kodova za oporavak (svih 20 koristi isti skup).
+  recoverySalt           String?
+  recoveryKdfMemoryKiB   Int?
+  recoveryKdfIterations  Int?
+  recoveryKdfParallelism Int?
+
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -32,6 +40,7 @@ model User {
   sessions      Session[]
   otpChallenges OtpChallenge[]
   vaultItems    VaultItem[]
+  recoveryCodes RecoveryCode[]
 
   @@map("users")
 }
@@ -89,3 +98,20 @@ model VaultItem {
   @@map("vault_items")
 }
 
+
+// Jedan kod za oporavak: server cuva samo HMAC dokaza posedovanja i Vault Key umotan kljucem
+// izvedenim iz koda. Sam kod nikad ne dolazi do servera.
+model RecoveryCode {
+  id              String    @id @default(uuid(7)) @db.Uuid
+  userId          String    @db.Uuid
+  codeHash        String
+  wrappedVaultKey Json
+  usedAt          DateTime?
+  createdAt       DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, codeHash])
+  @@index([userId])
+  @@map("recovery_codes")
+}

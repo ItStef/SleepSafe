@@ -10,8 +10,13 @@ import { filterEntries } from '../vault/search';
 import type { VaultStore } from '../vault/store';
 import { ItemForm } from './ItemForm';
 import { ItemView } from './ItemView';
+import { RecoveryManageScreen } from './RecoveryScreens';
 
-type View = { kind: 'list' } | { kind: 'view'; id: string } | { kind: 'form'; id: string | null };
+type View =
+  | { kind: 'list' }
+  | { kind: 'recovery' }
+  | { kind: 'view'; id: string }
+  | { kind: 'form'; id: string | null };
 
 export function VaultScreen({ user, vault }: { user: SessionUser; vault: VaultStore }) {
   const auth = useAuthStore();
@@ -31,13 +36,11 @@ export function VaultScreen({ user, vault }: { user: SessionUser; vault: VaultSt
   );
 
   const visible = useMemo(() => filterEntries(state.entries, query), [state.entries, query]);
+  const viewedId = view.kind === 'view' || view.kind === 'form' ? view.id : null;
   const selected =
-    view.kind === 'list' || view.id === null
-      ? undefined
-      : state.entries.find((entry) => entry.id === view.id);
+    viewedId === null ? undefined : state.entries.find((entry) => entry.id === viewedId);
   // Stavka koju gledamo je mozda obrisana na drugom uredjaju: tada se vracamo na listu.
-  const current: View =
-    view.kind !== 'list' && view.id !== null && !selected ? { kind: 'list' } : view;
+  const current: View = viewedId !== null && !selected ? { kind: 'list' } : view;
 
   const header = (
     <div className="toolbar">
@@ -46,6 +49,13 @@ export function VaultScreen({ user, vault }: { user: SessionUser; vault: VaultSt
         <p className="hint">{t.vault.signedInAs(user.email)}</p>
       </div>
       <div className="row">
+        <button
+          type="button"
+          className="secondary small"
+          onClick={() => setView({ kind: 'recovery' })}
+        >
+          {t.recoveryManage.open}
+        </button>
         <button type="button" className="secondary small" onClick={() => auth.lock()}>
           {t.vault.lock}
         </button>
@@ -55,6 +65,15 @@ export function VaultScreen({ user, vault }: { user: SessionUser; vault: VaultSt
       </div>
     </div>
   );
+
+  if (current.kind === 'recovery') {
+    return (
+      <div className="stack">
+        {header}
+        <RecoveryManageScreen onBack={() => setView({ kind: 'list' })} />
+      </div>
+    );
+  }
 
   if (current.kind === 'form') {
     return (

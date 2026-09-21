@@ -122,6 +122,59 @@ export async function verifyAccessToken(
   }
 }
 
+// --- Kodovi za oporavak ---------------------------------------------------------------------
+
+export function hashRecoveryAuth(recoveryAuth: string, pepper: string): string {
+  if (fromBase64Url(recoveryAuth).length !== AUTH_KEY_BYTES) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Invalid request');
+  }
+  return toBase64Url(mac(pepper, 'recovery-auth', recoveryAuth));
+}
+
+export function verifyRecoveryAuth(
+  recoveryAuth: string,
+  storedHash: string,
+  pepper: string,
+): boolean {
+  try {
+    return constantTimeEqual(
+      fromBase64Url(hashRecoveryAuth(recoveryAuth, pepper)),
+      fromBase64Url(storedHash),
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function generateResetToken(): string {
+  return toBase64Url(randomBytes(32));
+}
+
+export function hashResetToken(token: string, resetId: string, pepper: string): string {
+  return toBase64Url(mac(pepper, 'recovery-reset', resetId, token));
+}
+
+export function verifyResetToken(
+  token: string,
+  resetId: string,
+  storedHash: string,
+  pepper: string,
+): boolean {
+  try {
+    return constantTimeEqual(
+      fromBase64Url(hashResetToken(token, resetId, pepper)),
+      fromBase64Url(storedHash),
+    );
+  } catch {
+    return false;
+  }
+}
+
+// Za nepostojece naloge (i naloge bez kodova) vraca se isti oblik odgovora kao za prave.
+export function fakeRecoverySalt(email: string, pepper: string): string {
+  return toBase64Url(mac(pepper, 'fake-recovery-salt', email).subarray(0, SALT_BYTES));
+}
+
 export function fakeKdfSalt(email: string, pepper: string): string {
   return toBase64Url(mac(pepper, 'fake-salt', email).subarray(0, SALT_BYTES));
 }

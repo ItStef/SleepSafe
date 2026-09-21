@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+// Prazna vrednost u .env (na primer "SMTP_USER=") znaci "nije podeseno".
+const optionalText = z.preprocess(
+  (value) => (value === '' ? undefined : value),
+  z.string().min(1).optional(),
+);
+
 const booleanFromEnv = z
   .enum(['true', 'false'])
   .default('false')
@@ -29,8 +35,8 @@ const schema = z.object({
   SMTP_HOST: z.string().min(1).default('127.0.0.1'),
   SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(1025),
   SMTP_TLS: z.enum(['none', 'starttls', 'tls']).default('none'),
-  SMTP_USER: z.string().min(1).optional(),
-  SMTP_PASS: z.string().min(1).optional(),
+  SMTP_USER: optionalText,
+  SMTP_PASS: optionalText,
   SMTP_FROM: z.string().min(3).default('SleepSafe <no-reply@sleepsafe.local>'),
 });
 

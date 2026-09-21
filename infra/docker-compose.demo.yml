@@ -1,0 +1,14 @@
+# Probni rezim (pnpm stack:demo): ceo sistem radi odmah, a email kodovi se ne salju stvarno nego
+# stizu u Mailpit (http://localhost:8025). Nije za pravo koriscenje: server radi u razvojnom rezimu.
+services:
+  api:
+    depends_on:
+      mailpit:
+        condition: service_started
+    environment:
+      NODE_ENV: development
+      SMTP_HOST: mailpit
+      SMTP_PORT: '1025'
+      SMTP_TLS: none
+      SMTP_USER: ''
+      SMTP_PASS: ''

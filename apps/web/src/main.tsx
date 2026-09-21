@@ -1,3 +1,5 @@
+// PRVI uvoz: CSP nema 'unsafe-eval', pa Zod ne sme da pokusa da kompajlira provere.
+import '@sleepsafe/shared/jitless';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';

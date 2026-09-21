@@ -1,5 +1,7 @@
 name: sleepsafe
 
+# Bez profila (pnpm db:up) rade samo baza i lazni mail server, za razvoj na racunaru.
+# Profil "app" (pnpm stack:up ili pnpm stack:demo) dodaje API i veb klijent iza Caddy-ja (HTTPS).
 services:
   postgres:
     image: postgres:17-alpine
@@ -28,5 +30,52 @@ services:
       - '127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025'
       - '127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025'
 
+  api:
+    profiles: [app]
+    build:
+      context: ..
+      dockerfile: infra/api.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Nista se ne objavljuje ka racunaru: API je dostupan samo Caddy-ju, kroz mrezu kontejnera.
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      HOST: 0.0.0.0
+      PORT: '3000'
+      TRUST_PROXY: 'true'
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      APP_URL: ${STACK_APP_URL:-https://${SITE_ADDRESS:-localhost}}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET mora biti podesen u .env}
+      SERVER_PEPPER: ${SERVER_PEPPER:?SERVER_PEPPER mora biti podesen u .env}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_TLS: ${SMTP_TLS:-none}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-SleepSafe <no-reply@sleepsafe.local>}
+
+  web:
+    profiles: [app]
+    build:
+      context: ..
+      dockerfile: infra/web.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+      CADDY_TLS: ${CADDY_TLS:-internal}
+    ports:
+      - '${HTTP_PORT:-80}:80'
+      - '${HTTPS_PORT:-443}:443'
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+
 volumes:
   postgres-data:
+  caddy-data:
+  caddy-config:

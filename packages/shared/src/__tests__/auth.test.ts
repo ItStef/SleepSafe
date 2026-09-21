@@ -5,6 +5,8 @@ import {
   emailSchema,
   otpCodeSchema,
   preloginRequestSchema,
+  RECOVERY_CODE_COUNT,
+  recoveryBundleSchema,
   registerRequestSchema,
   verifyCodeRequestSchema,
   wrappedKeyEnvelopeSchema,
@@ -15,6 +17,17 @@ import {
 
 const authKey = 'A'.repeat(43);
 const envelope = { v: 1, iv: 'A'.repeat(16), ct: 'A'.repeat(64) };
+const recoveryCodes = Array.from({ length: RECOVERY_CODE_COUNT }, (_, index) => ({
+  authKey: `${String.fromCharCode(65 + index)}`.repeat(43),
+  wrappedVaultKey: envelope,
+}));
+const validRecovery = {
+  kdfSalt: 'B'.repeat(22),
+  kdfMemoryKiB: 65536,
+  kdfIterations: 3,
+  kdfParallelism: 1,
+  codes: recoveryCodes,
+};
 const validRegister = {
   email: 'korisnik@example.com',
   authKey,
@@ -23,6 +36,7 @@ const validRegister = {
   kdfIterations: 3,
   kdfParallelism: 1,
   wrappedVaultKey: envelope,
+  recovery: validRecovery,
 };
 
 describe('emailSchema', () => {
@@ -174,5 +188,43 @@ describe('prijava i odgovori', () => {
     expect(meResponseSchema.safeParse(ok).success).toBe(true);
     expect(meResponseSchema.safeParse({ ...ok, authHash: 'x' }).success).toBe(false);
     expect(meResponseSchema.safeParse({ ...ok, id: 'nije-uuid' }).success).toBe(false);
+  });
+});
+
+describe('recoveryBundleSchema', () => {
+  it('prihvata tacno 20 razlicitih kodova', () => {
+    expect(recoveryBundleSchema.safeParse(validRecovery).success).toBe(true);
+    expect(RECOVERY_CODE_COUNT).toBe(20);
+  });
+
+  it('odbija manje ili vise od 20 kodova', () => {
+    for (const count of [0, 1, 19, 21]) {
+      const codes = Array.from({ length: count }, (_, index) => ({
+        authKey: `${String.fromCharCode(65 + index)}`.repeat(43),
+        wrappedVaultKey: envelope,
+      }));
+      expect(recoveryBundleSchema.safeParse({ ...validRecovery, codes }).success).toBe(false);
+    }
+  });
+
+  it('odbija duplirane kodove, nepoznata polja i neispravne vrednosti', () => {
+    const duplicated = [...recoveryCodes.slice(0, 19), recoveryCodes[0]];
+    const bad = [
+      { ...validRecovery, codes: duplicated },
+      { ...validRecovery, extra: 1 },
+      { ...validRecovery, codes: recoveryCodes.map((code) => ({ ...code, extra: 1 })) },
+      { ...validRecovery, codes: recoveryCodes.map((code) => ({ ...code, authKey: 'kratak' })) },
+      { ...validRecovery, kdfSalt: 'x' },
+      null,
+    ];
+    for (const value of bad) {
+      expect(recoveryBundleSchema.safeParse(value).success).toBe(false);
+    }
+  });
+
+  it('registracija bez kodova za oporavak nije ispravna', () => {
+    const withoutRecovery: Record<string, unknown> = { ...validRegister };
+    delete withoutRecovery['recovery'];
+    expect(registerRequestSchema.safeParse(withoutRecovery).success).toBe(false);
   });
 });
