@@ -13,7 +13,12 @@ const PASSWORD = 'moja dugacka master lozinka';
 async function setup(prepare?: (server: FakeServer) => Promise<void>) {
   const server = new FakeServer();
   await prepare?.(server);
-  const store = new AuthStore({ api: server, deriver: inlineDeriver, kdfParams: TEST_KDF });
+  const store = new AuthStore({
+    api: server,
+    vaultApi: server,
+    deriver: inlineDeriver,
+    kdfParams: TEST_KDF,
+  });
   await store.boot();
   const user = userEvent.setup();
   render(

@@ -20,10 +20,33 @@ describe('AuthStore', () => {
 
   beforeEach(() => {
     server = new FakeServer();
-    store = new AuthStore({ api: server, deriver: inlineDeriver, kdfParams: TEST_KDF });
+    store = new AuthStore({
+      api: server,
+      vaultApi: server,
+      deriver: inlineDeriver,
+      kdfParams: TEST_KDF,
+    });
   });
 
   const status = () => store.getState().status;
+
+  const secrets = () => {
+    const internal = store as unknown as Record<string, unknown>;
+    return {
+      profile: internal['profile'],
+      challengeId: internal['challengeId'],
+      pendingRegistration: internal['pendingRegistration'],
+      pendingLogin: internal['pendingLogin'],
+      vault: internal['vault'],
+    };
+  };
+  const allEmpty = {
+    profile: null,
+    challengeId: null,
+    pendingRegistration: null,
+    pendingLogin: null,
+    vault: null,
+  };
 
   async function registerAndVerify(email = EMAIL, password = PASSWORD) {
     await store.register(email, password);
@@ -274,23 +297,113 @@ describe('AuthStore', () => {
     });
   });
 
-  describe('tajne u memoriji', () => {
-    const secrets = () => {
-      const internal = store as unknown as Record<string, unknown>;
-      return {
-        profile: internal['profile'],
-        challengeId: internal['challengeId'],
-        pendingRegistration: internal['pendingRegistration'],
-        pendingLogin: internal['pendingLogin'],
-      };
+  describe('vault', () => {
+    const openVault = () => {
+      const state = store.getState();
+      if (state.status !== 'unlocked') throw new Error('expected unlocked');
+      return state.vault;
     };
-    const allEmpty = {
-      profile: null,
-      challengeId: null,
-      pendingRegistration: null,
-      pendingLogin: null,
-    };
+    const item = (title: string) => ({
+      title,
+      username: 'marko',
+      password: 'tajna',
+      url: '',
+      notes: '',
+    });
 
+    it('otkljucavanje daje vault za tog korisnika, koji stavke cuva sifrovane na serveru', async () => {
+      await registerAndVerify();
+      await signIn();
+      const vault = openVault();
+      const state = store.getState();
+      if (state.status !== 'unlocked') throw new Error('expected unlocked');
+      expect(vault.getState().status).toBe('idle');
+
+      await vault.sync();
+      const id = await vault.create(item('Banka'));
+
+      const [call] = server.callsTo('vault.put');
+      const sent = call?.args as { body: { envelope: { v: 1; iv: string; ct: string } } };
+      expect(JSON.stringify(sent)).not.toContain('Banka');
+      // Isti kljuc i isti korisnik (AAD): stavku otvara nezavisno izvedeni kljuc iz stanja.
+      expect(
+        await decryptItem(state.vaultKey, sent.body.envelope, {
+          userId: state.user.id,
+          itemId: id,
+        }),
+      ).toEqual(item('Banka'));
+    });
+
+    it('stavke prezive zakljucavanje i ponovno otkljucavanje (sa servera), a stari vault je obrisan', async () => {
+      await registerAndVerify();
+      await signIn();
+      const first = openVault();
+      await first.sync();
+      await first.create(item('Banka'));
+
+      store.lock();
+      expect(first.getState().status).toBe('disposed');
+      expect(first.getState().entries).toEqual([]);
+
+      await store.unlock(PASSWORD);
+      const second = openVault();
+      expect(second).not.toBe(first);
+      expect(second.getState().entries).toEqual([]); // nista se ne drzi u memoriji izmedju
+      await second.sync();
+      expect(second.getState().entries.map((entry) => entry.data.title)).toEqual(['Banka']);
+    });
+
+    it('zakljucavanje, odjava i istek sesije brisu vault iz memorije', async () => {
+      await registerAndVerify();
+      await signIn();
+
+      let vault = openVault();
+      await vault.sync();
+      await vault.create(item('a'));
+      store.lock();
+      expect(vault.getState().status).toBe('disposed');
+      expect(secrets().vault).toBeNull();
+
+      await store.unlock(PASSWORD);
+      vault = openVault();
+      await store.logout();
+      expect(vault.getState().status).toBe('disposed');
+      expect(secrets().vault).toBeNull();
+
+      await signIn();
+      vault = openVault();
+      store.sessionExpired();
+      expect(vault.getState().status).toBe('disposed');
+      expect(secrets().vault).toBeNull();
+    });
+
+    it('vault ne ostaje u memoriji ni kad se otkljucano stanje napusti drugim putem (nova prijava)', async () => {
+      await registerAndVerify();
+      await signIn();
+      const vault = openVault();
+      await vault.sync();
+      await vault.create(item('a'));
+
+      await store.login(EMAIL, PASSWORD);
+      expect(status()).toBe('loginCode');
+      expect(vault.getState().status).toBe('disposed');
+      expect(vault.getState().entries).toEqual([]);
+      expect(secrets().vault).toBeNull();
+    });
+
+    it('pogresna lozinka pri otkljucavanju ne pravi vault', async () => {
+      await registerAndVerify();
+      await signIn();
+      store.lock();
+      await expect(store.unlock('pogresna lozinka')).rejects.toMatchObject({
+        code: 'WRONG_PASSWORD',
+      });
+      expect(status()).toBe('locked');
+      expect(secrets().vault).toBeNull();
+    });
+  });
+
+  describe('tajne u memoriji', () => {
     it('izmedju koraka se drze samo dok su potrebni, a odustajanje ih brise', async () => {
       await store.register(EMAIL, PASSWORD);
       expect(secrets().pendingRegistration).not.toBeNull();

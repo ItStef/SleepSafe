@@ -16,7 +16,9 @@ import {
   wrappedKeyEnvelopeSchema,
 } from '@sleepsafe/shared';
 import type { AuthApi } from '../api/auth';
+import type { VaultApi } from '../api/vault';
 import type { KeyDeriver } from '../crypto/deriver';
+import { VaultStore } from '../vault/store';
 import { ClientError, type ClientErrorCode } from './errors';
 
 export type Notice = 'emailVerified' | 'sessionExpired' | 'serverUnavailable';
@@ -32,10 +34,11 @@ export type AuthState =
   | { status: 'verifyingEmail'; email: string }
   | { status: 'loginCode'; email: string }
   | { status: 'locked'; email: string }
-  | { status: 'unlocked'; user: SessionUser; vaultKey: CryptoKey };
+  | { status: 'unlocked'; user: SessionUser; vaultKey: CryptoKey; vault: VaultStore };
 
 export interface AuthStoreDeps {
   api: AuthApi;
+  vaultApi: VaultApi;
   deriver: KeyDeriver;
   kdfParams?: KdfParams;
 }
@@ -53,6 +56,7 @@ export class AuthStore {
   private challengeId: string | null = null;
   private pendingRegistration: RegisterRequest | null = null;
   private pendingLogin: PendingLogin | null = null;
+  private vault: VaultStore | null = null;
 
   constructor(private readonly deps: AuthStoreDeps) {}
 
@@ -66,6 +70,10 @@ export class AuthStore {
   getState = (): AuthState => this.state;
 
   private setState(next: AuthState): void {
+    // Dekriptovane stavke postoje samo dok je vault otkljucan, ma kojim putem se to stanje napusti.
+    if (next.status !== 'unlocked') {
+      this.closeVault();
+    }
     this.state = next;
     for (const listener of this.listeners) {
       listener();
@@ -77,6 +85,26 @@ export class AuthStore {
     this.challengeId = null;
     this.pendingRegistration = null;
     this.pendingLogin = null;
+  }
+
+  private closeVault(): void {
+    this.vault?.dispose();
+    this.vault = null;
+  }
+
+  private open(profile: MeResponse, vaultKey: CryptoKey): void {
+    const vault = new VaultStore({
+      api: this.deps.vaultApi,
+      vaultKey,
+      userId: profile.id,
+    });
+    this.vault = vault;
+    this.setState({
+      status: 'unlocked',
+      user: { id: profile.id, email: profile.email },
+      vaultKey,
+      vault,
+    });
   }
 
   private require(status: AuthState['status']): void {
@@ -180,11 +208,7 @@ export class AuthStore {
     this.profile = profile;
     this.pendingLogin = null;
     this.challengeId = null;
-    this.setState({
-      status: 'unlocked',
-      user: { id: profile.id, email: profile.email },
-      vaultKey,
-    });
+    this.open(profile, vaultKey);
   }
 
   async resendLoginCode(): Promise<void> {
@@ -222,11 +246,7 @@ export class AuthStore {
     );
     authKey.fill(0);
     const vaultKey = await openVault(profile, kek, 'WRONG_PASSWORD');
-    this.setState({
-      status: 'unlocked',
-      user: { id: profile.id, email: profile.email },
-      vaultKey,
-    });
+    this.open(profile, vaultKey);
   }
 
   lock(): void {

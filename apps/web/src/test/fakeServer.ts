@@ -7,14 +7,20 @@ import {
 } from '@sleepsafe/crypto';
 import type {
   ChallengeResponse,
+  ItemEnvelope,
+  ListItemsResponse,
   LoginRequest,
   MeResponse,
   PreloginResponse,
+  PutItemRequest,
+  PutItemResponse,
   RegisterRequest,
+  SyncItem,
   VerifyCodeRequest,
 } from '@sleepsafe/shared';
 import type { AuthApi } from '../api/auth';
 import { ApiError, type RefreshResult } from '../api/http';
+import type { VaultApi } from '../api/vault';
 
 export const TEST_KDF: KdfParams = { memoryKiB: 19456, iterations: 2, parallelism: 1 };
 export const CODE = '123456';
@@ -25,15 +31,30 @@ interface StoredUser {
   verified: boolean;
 }
 
-export class FakeServer implements AuthApi {
+interface StoredItem {
+  revision: number;
+  envelope: ItemEnvelope | null;
+  updatedAt: string;
+}
+
+interface StoredVault {
+  revision: number;
+  items: Map<string, StoredItem>;
+}
+
+// Ponasa se kao pravi server (routes/vault.ts): isti kursori, tombstone zapisi, 409/404/422.
+export class FakeServer implements AuthApi, VaultApi {
   readonly users = new Map<string, StoredUser>();
   readonly calls: { name: string; args: unknown }[] = [];
   private readonly challenges = new Map<string, { email: string; purpose: 'verify' | 'login' }>();
   private sessionEmail: string | null = null;
   private token = false;
+  private readonly vaults = new Map<string, StoredVault>();
+  private listGate: Promise<void> | null = null;
   down = false;
   preloginOverride: Partial<PreloginResponse> | null = null;
   failLogout = false;
+  itemLimit = 10_000;
 
   private record(name: string, args: unknown): void {
     this.calls.push({ name, args });
@@ -173,6 +194,102 @@ export class FakeServer implements AuthApi {
       kdfParallelism: request.kdfParallelism,
       wrappedVaultKey: request.wrappedVaultKey,
     };
+  }
+
+  // Zadrzi odgovore na list() dok se ne pozove vracena funkcija (zahtev je vec obradjen).
+  holdList(): () => void {
+    let release!: () => void;
+    this.listGate = new Promise<void>((resolve) => (release = resolve));
+    return () => {
+      this.listGate = null;
+      release();
+    };
+  }
+
+  private currentUserId(): string {
+    const user = this.sessionEmail === null ? undefined : this.users.get(this.sessionEmail);
+    if (!this.token || !user) {
+      throw new ApiError(401, 'UNAUTHENTICATED', 'Invalid or expired token');
+    }
+    return user.id;
+  }
+
+  private vaultOf(userId: string): StoredVault {
+    let vault = this.vaults.get(userId);
+    if (!vault) {
+      vault = { revision: 0, items: new Map() };
+      this.vaults.set(userId, vault);
+    }
+    return vault;
+  }
+
+  // Upis "sa drugog uredjaja": zaobilazi sesiju ovog klijenta, a pravila su ista kao na serveru.
+  putAsOtherDevice(userId: string, id: string, body: PutItemRequest): PutItemResponse {
+    const vault = this.vaultOf(userId);
+    const existing = vault.items.get(id);
+    if (body.baseRevision === null) {
+      if (existing) throw new ApiError(409, 'CONFLICT', 'Item was modified elsewhere');
+      const active = [...vault.items.values()].filter((item) => item.envelope !== null).length;
+      if (active >= this.itemLimit) throw new ApiError(422, 'VAULT_FULL', 'Item limit reached');
+    } else {
+      if (!existing) throw new ApiError(404, 'NOT_FOUND', 'Not found');
+      if (existing.envelope === null || existing.revision !== body.baseRevision) {
+        throw new ApiError(409, 'CONFLICT', 'Item was modified elsewhere');
+      }
+    }
+    vault.revision += 1;
+    vault.items.set(id, {
+      revision: vault.revision,
+      envelope: body.envelope,
+      updatedAt: new Date().toISOString(),
+    });
+    return { id, revision: vault.revision };
+  }
+
+  removeAsOtherDevice(userId: string, id: string): void {
+    const vault = this.vaultOf(userId);
+    const existing = vault.items.get(id);
+    if (!existing || existing.envelope === null) return;
+    vault.revision += 1;
+    vault.items.set(id, {
+      revision: vault.revision,
+      envelope: null,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  async list(since: number, limit: number): Promise<ListItemsResponse> {
+    this.record('vault.list', { since, limit });
+    const userId = this.currentUserId();
+    const rows = [...this.vaultOf(userId).items.entries()]
+      .filter(([, item]) => item.revision > since && (since !== 0 || item.envelope !== null))
+      .sort(([, a], [, b]) => a.revision - b.revision)
+      .slice(0, limit + 1);
+    const page = rows.slice(0, limit);
+    const items: SyncItem[] = page.map(([id, item]) => ({
+      id,
+      revision: item.revision,
+      deleted: item.envelope === null,
+      envelope: item.envelope,
+      updatedAt: item.updatedAt,
+    }));
+    const response = {
+      items,
+      cursor: page.at(-1)?.[1].revision ?? since,
+      hasMore: rows.length > limit,
+    };
+    if (this.listGate) await this.listGate;
+    return response;
+  }
+
+  async put(id: string, body: PutItemRequest): Promise<PutItemResponse> {
+    this.record('vault.put', { id, body });
+    return this.putAsOtherDevice(this.currentUserId(), id, body);
+  }
+
+  async remove(id: string): Promise<void> {
+    this.record('vault.remove', { id });
+    this.removeAsOtherDevice(this.currentUserId(), id);
   }
 
   private newChallenge(email: string, purpose: 'verify' | 'login'): string {

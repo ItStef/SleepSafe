@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --filter @sleepsafe/web exec vitest run src/contract.test.ts)",
+      "Bash(curl -s \"http://127.0.0.1:8125/api/v1/messages?limit=10\")",
+      "Bash(curl -s \"http://127.0.0.1:8125/api/v1/message/0hOBt0lrv1IdWXSbUkUUgZ\")",
+      "Bash(cmd //c \"rmdir /s /q C:\\\\\\\\ss72\")"
+    ],
+    "additionalDirectories": [
+      "C:\\ss72\\apps\\web\\src"
+    ]
+  }
+}
