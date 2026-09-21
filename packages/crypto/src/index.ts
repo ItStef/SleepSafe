@@ -17,7 +17,20 @@ export {
   encryptItem,
   rewrapVaultKey,
   unwrapVaultKey,
+  wrapVaultKey,
   type CreatedVault,
   type Envelope,
   type ItemContext,
 } from './vault';
+export {
+  RECOVERY_ALPHABET,
+  RECOVERY_CODE_LENGTH,
+  RECOVERY_GROUP_LENGTH,
+  deriveRecoveryKeys,
+  formatRecoveryCode,
+  generateRecoveryCode,
+  generateRecoveryCodes,
+  normalizeRecoveryCode,
+  recoveryAuthToString,
+  type RecoveryKeys,
+} from './recovery';

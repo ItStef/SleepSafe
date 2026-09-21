@@ -1,6 +1,11 @@
 import { useAuthState, useAuthStore } from './auth/context';
 import { CodeScreen } from './screens/CodeScreen';
 import { SignedOutScreen } from './screens/SignedOutScreen';
+import {
+  RecoveryCodeScreen,
+  RecoveryCodesScreen,
+  RecoveryPasswordScreen,
+} from './screens/RecoveryScreens';
 import { UnlockScreen } from './screens/UnlockScreen';
 import { VaultScreen } from './screens/VaultScreen';
 import { t } from './strings';
@@ -14,6 +19,22 @@ function Screen() {
       return <p className="hint">{t.loading}</p>;
     case 'signedOut':
       return <SignedOutScreen notice={state.notice} />;
+    case 'recoveryCodes':
+      return <RecoveryCodesScreen email={state.email} codes={state.codes} />;
+    case 'recoveryOtp':
+      return (
+        <CodeScreen
+          title={t.recover.otpTitle}
+          intro={t.recover.otpIntro(state.email)}
+          onSubmit={(code) => store.submitRecoveryOtp(code)}
+          onResend={() => store.resendRecoveryOtp()}
+          onBack={() => store.cancelPending()}
+        />
+      );
+    case 'recoveryCode':
+      return <RecoveryCodeScreen />;
+    case 'recoveryPassword':
+      return <RecoveryPasswordScreen />;
     case 'verifyingEmail':
       return (
         <CodeScreen

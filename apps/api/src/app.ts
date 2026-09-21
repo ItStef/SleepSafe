@@ -10,6 +10,7 @@ import { AppError } from './errors';
 import type { Mailer } from './mailer';
 import { registerAuthRoutes } from './routes/auth';
 import { registerHealthRoutes } from './routes/health';
+import { registerRecoveryRoutes } from './routes/recovery';
 import { registerVaultRoutes } from './routes/vault';
 import { registerAccountRoutes } from './routes/account';
 import { FailureThrottle } from './throttle';
@@ -108,6 +109,7 @@ export async function buildApp({
   );
   registerAuthRoutes(app, { config, prisma, mailer, clock, throttle });
   registerAccountRoutes(app, { config, prisma, mailer, clock, throttle });
+  registerRecoveryRoutes(app, { config, prisma, mailer, clock, throttle });
 
   return app;
 }

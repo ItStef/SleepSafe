@@ -14,6 +14,10 @@ export function describeError(error: unknown): string {
         return t.errors.weakKdf;
       case 'VAULT_CORRUPT':
         return t.errors.vaultCorrupt;
+      case 'INVALID_RECOVERY_CODE':
+        return t.errors.recoveryCodeFormat;
+      case 'WRONG_RECOVERY_CODE':
+        return t.errors.wrongRecoveryCode;
       default:
         return t.errors.generic;
     }
@@ -40,6 +44,8 @@ export function describeError(error: unknown): string {
         return t.errors.invalidCredentials;
       case 'INVALID_CODE':
         return t.errors.invalidCode;
+      case 'INVALID_RECOVERY':
+        return t.errors.invalidRecovery;
       case 'TOO_MANY_ATTEMPTS':
         return t.errors.tooManyAttempts;
       case 'RATE_LIMITED':
