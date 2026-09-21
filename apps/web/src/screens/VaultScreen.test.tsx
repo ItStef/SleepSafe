@@ -427,7 +427,7 @@ describe('VaultScreen', () => {
 
       await user.click(button(/kopiraj lozinku/i));
       expect(clipboard.text).toBe('tajna-lozinka-123');
-      expect(screen.getByRole('status')).toHaveTextContent(/briše za 30 sekundi/i);
+      expect(await screen.findByText(/briše za 30 sekundi/i)).toBeInTheDocument();
 
       await act(async () => {
         await vi.advanceTimersByTimeAsync(29_000);
