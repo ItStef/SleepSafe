@@ -11,12 +11,6 @@ out/
 # Prisma klijent (generise se komandom pnpm db:generate)
 apps/api/src/generated/
 
-# Testovi i pokrivenost
-coverage/
-playwright-report/
-test-results/
-.vitest-cache/
-
 # Tajne i konfiguracija okruženja (NIKAD u repozitorijum)
 .env
 .env.*

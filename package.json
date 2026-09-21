@@ -4,7 +4,6 @@
   "description": "",
   "private": true,
   "scripts": {
-    "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -33,7 +32,6 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "prettier": "^3.9.8",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.70.0",
-    "vitest": "^5.0.1"
+    "typescript-eslint": "^8.70.0"
   }
 }

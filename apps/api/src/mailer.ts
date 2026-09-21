@@ -56,16 +56,3 @@ export function createSmtpMailer(smtp: SmtpSettings): Mailer {
     },
   };
 }
-
-export class MemoryMailer implements Mailer {
-  readonly sent: Mail[] = [];
-
-  async send(mail: Mail): Promise<void> {
-    assertValidMail(mail);
-    this.sent.push({ ...mail });
-  }
-
-  get last(): Mail | undefined {
-    return this.sent.at(-1);
-  }
-}

@@ -11,16 +11,6 @@ export function randomBytes(length: number): Bytes {
   return crypto.getRandomValues(new Uint8Array(length));
 }
 
-export function concatBytes(...parts: Uint8Array[]): Bytes {
-  const out = new Uint8Array(parts.reduce((total, part) => total + part.length, 0));
-  let offset = 0;
-  for (const part of parts) {
-    out.set(part, offset);
-    offset += part.length;
-  }
-  return out;
-}
-
 export function utf8Encode(text: string): Bytes {
   return new TextEncoder().encode(text);
 }

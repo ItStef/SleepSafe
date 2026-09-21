@@ -1,4 +1,4 @@
-import { type KdfParams, deriveKeys } from '@sleepsafe/crypto';
+import type { KdfParams } from '@sleepsafe/crypto';
 
 export interface DerivedSecrets {
   authKey: Uint8Array;
@@ -8,10 +8,6 @@ export interface DerivedSecrets {
 export interface KeyDeriver {
   derive(password: string, salt: Uint8Array, params: KdfParams): Promise<DerivedSecrets>;
 }
-
-export const inlineDeriver: KeyDeriver = {
-  derive: (password, salt, params) => deriveKeys(password, salt, params),
-};
 
 type WorkerReply =
   { ok: true; authKey: Uint8Array; kek: CryptoKey } | { ok: false; message: string };

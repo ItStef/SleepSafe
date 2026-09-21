@@ -86,12 +86,6 @@ export class VaultStore {
 
   getState = (): VaultState => this.state;
 
-  get(id: string): VaultEntry | undefined {
-    return this.entries.get(id);
-  }
-
-  // Prvo ucitavanje i svako sledece osvezavanje su isto: povuci sve posle poslednjeg kursora.
-  // Nikad ne odbija: ishod je u stanju (status i error).
   sync(): Promise<void> {
     if (this.isDisposed()) {
       return Promise.resolve();

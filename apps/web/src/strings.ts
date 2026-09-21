@@ -22,13 +22,11 @@ export const t = {
   },
 
   login: {
-    title: 'Prijava',
     submit: 'Prijavi se',
     working: 'Izvodim ključeve…',
   },
 
   register: {
-    title: 'Napravite nalog',
     intro:
       'Master lozinka štiti sve vaše podatke. Ona se nikad ne šalje serveru, pa je zato nemoguće povratiti.',
     submit: 'Napravi nalog',
@@ -63,7 +61,6 @@ export const t = {
     logout: 'Odjavi se',
     add: 'Nova stavka',
     search: 'Pretraga',
-    searchHint: 'Naslov, korisničko ime, adresa ili beleške',
     count: (shown: number, total: number) =>
       shown === total ? `Stavki: ${total}` : `Prikazano ${shown} od ${total}`,
     loading: 'Učitavam stavke…',
@@ -123,7 +120,6 @@ export const t = {
     digits: 'Cifre (0-9)',
     symbols: 'Simboli (!@#…)',
     avoidAmbiguous: 'Izbegni slične znakove (I, l, 1, O, 0, o)',
-    suggestion: 'Predlog lozinke',
     regenerate: 'Nova lozinka',
     use: 'Koristi ovu lozinku',
     entropy: (bits: number) => `Približno ${bits} bita entropije`,

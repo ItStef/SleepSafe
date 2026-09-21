@@ -32,19 +32,12 @@ export async function buildApp({
   clock = () => new Date(),
 }: AppDeps): Promise<FastifyInstance> {
   const app = Fastify({
-    logger:
-      config.NODE_ENV === 'test'
-        ? false
-        : {
-            level: config.LOG_LEVEL,
-            redact: [
-              'req.headers.authorization',
-              'req.headers.cookie',
-              'res.headers["set-cookie"]',
-            ],
-          },
+    logger: {
+      level: config.LOG_LEVEL,
+      redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
+    },
     trustProxy: config.TRUST_PROXY,
-    bodyLimit: 1024 * 1024, // 1 MiB je dovoljno za stavke; veci telo se odbija
+    bodyLimit: 1024 * 1024, // 1 MiB
   });
 
   await app.register(helmet, {

@@ -2,10 +2,8 @@ import { z } from 'zod';
 
 export const emailSchema = z.string().trim().toLowerCase().pipe(z.email().max(254));
 
-// Auth kljuc: 32 bajta u base64url = tacno 43 znaka (bez punjenja).
 export const authKeySchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
 
-// So za KDF: 16 do 48 bajtova u base64url.
 export const kdfSaltSchema = z.string().regex(/^[A-Za-z0-9_-]{22,64}$/);
 
 export const otpCodeSchema = z.string().regex(/^\d{6}$/);
@@ -56,7 +54,6 @@ export const meResponseSchema = z.strictObject({
   wrappedVaultKey: wrappedKeyEnvelopeSchema,
 });
 
-export type PreloginRequest = z.infer<typeof preloginRequestSchema>;
 export type PreloginResponse = z.infer<typeof preloginResponseSchema>;
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 export type VerifyCodeRequest = z.infer<typeof verifyCodeRequestSchema>;

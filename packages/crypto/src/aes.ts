@@ -10,31 +10,18 @@ export interface AesGcmResult {
   ciphertext: Bytes;
 }
 
-export async function aesGcmEncryptWithIv(
-  key: CryptoKey,
-  iv: Bytes,
-  plaintext: Bytes,
-  aad: Bytes,
-): Promise<Bytes> {
-  if (iv.length !== IV_LENGTH) {
-    throw new CryptoError('INVALID_INPUT', 'Invalid IV length');
-  }
-  const ciphertext = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv, additionalData: aad, tagLength: TAG_LENGTH_BITS },
-    key,
-    plaintext,
-  );
-  return new Uint8Array(ciphertext);
-}
-
 export async function aesGcmEncrypt(
   key: CryptoKey,
   plaintext: Bytes,
   aad: Bytes,
 ): Promise<AesGcmResult> {
   const iv = randomBytes(IV_LENGTH);
-  const ciphertext = await aesGcmEncryptWithIv(key, iv, plaintext, aad);
-  return { iv, ciphertext };
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv, additionalData: aad, tagLength: TAG_LENGTH_BITS },
+    key,
+    plaintext,
+  );
+  return { iv, ciphertext: new Uint8Array(ciphertext) };
 }
 
 export async function aesGcmDecrypt(

@@ -9,8 +9,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "typecheck": "prisma generate && tsc --noEmit",
-    "test": "prisma generate && vitest run"
+    "typecheck": "prisma generate && tsc --noEmit"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",

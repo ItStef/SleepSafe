@@ -43,9 +43,7 @@ export const listItemsResponseSchema = z.strictObject({
   hasMore: z.boolean(),
 });
 
-export type ItemEnvelope = z.infer<typeof itemEnvelopeSchema>;
 export type PutItemRequest = z.infer<typeof putItemRequestSchema>;
 export type PutItemResponse = z.infer<typeof putItemResponseSchema>;
 export type SyncItem = z.infer<typeof syncItemSchema>;
-export type ListItemsQuery = z.infer<typeof listItemsQuerySchema>;
 export type ListItemsResponse = z.infer<typeof listItemsResponseSchema>;
