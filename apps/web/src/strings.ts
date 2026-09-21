@@ -18,14 +18,12 @@ export const t = {
     emailVerified: 'Email je potvrđen. Sada se možete prijaviti.',
     sessionExpired: 'Sesija je istekla ili je odjavljena. Prijavite se ponovo.',
     serverUnavailable: 'Server trenutno nije dostupan. Pokušajte ponovo za nekoliko trenutaka.',
-    passwordReset: 'Master lozinka je promenjena. Prijavite se novom lozinkom.',
   },
 
   login: {
     title: 'Prijava',
     submit: 'Prijavi se',
     working: 'Izvodim ključeve…',
-    forgot: 'Zaboravili ste master lozinku?',
   },
 
   register: {
@@ -132,76 +130,7 @@ export const t = {
       `Izaberite bar jednu grupu znakova i dužinu od ${min} do ${max}.`,
   },
 
-  recoveryCodes: {
-    title: 'Sačuvajte kodove za oporavak',
-    intro: (count: number) =>
-      `Dobili ste ${count} kodova za oporavak. Ako zaboravite master lozinku, jedan kod i pristup vašem emailu vraćaju vam pristup podacima.`,
-    rules: [
-      'Svaki kod važi samo jednom.',
-      'Bez master lozinke i bez kodova podaci se ne mogu povratiti: server ih ne može otvoriti.',
-      'Čuvajte ih odvojeno od ovog uređaja (odštampane ili u drugom menadžeru lozinki), ne u ovom vaultu.',
-      'Prikazuju se samo sada.',
-    ],
-    listLabel: 'Kodovi za oporavak',
-    copyAll: 'Kopiraj sve',
-    download: 'Preuzmi (.txt)',
-    print: 'Štampaj',
-    copied: (seconds: number) => `Kodovi su kopirani. Klipbord se briše za ${seconds} sekundi.`,
-    copyFailed: 'Kopiranje nije uspelo. Pregledač nije dozvolio pristup klipbordu.',
-    acknowledge: 'Sačuvao/la sam kodove na sigurnom mestu.',
-    continue: 'Nastavi',
-    back: 'Nazad',
-    fileHeader: 'SleepSafe: kodovi za oporavak',
-    fileAccount: (email: string) => `Nalog: ${email}`,
-    fileNote: 'Svaki kod važi samo jednom. Čuvajte ih na sigurnom mestu.',
-    fileName: 'sleepsafe-kodovi-za-oporavak.txt',
-  },
-
-  recover: {
-    title: 'Oporavak naloga',
-    intro:
-      'Unesite email adresu naloga. Poslaćemo kod na email, a zatim vam treba i jedan od kodova za oporavak koje ste dobili pri registraciji.',
-    submit: 'Pošalji kod',
-    working: 'Šaljem…',
-    back: 'Nazad na prijavu',
-    otpTitle: 'Unesite kod iz emaila',
-    otpIntro: (email: string) =>
-      `Ako nalog ${email} postoji i ima kodove za oporavak, poslali smo šestocifreni kod.`,
-    codeTitle: 'Unesite kod za oporavak',
-    codeIntro: 'Unesite jedan od kodova za oporavak (oblik ABCDE-FGHJK). Svaki važi samo jednom.',
-    codeField: 'Kod za oporavak',
-    codeSubmit: 'Proveri kod',
-    codeWorking: 'Proveravam…',
-    passwordTitle: 'Nova master lozinka',
-    passwordIntro:
-      'Kod je ispravan. Izaberite novu master lozinku: svi vaši podaci ostaju netaknuti.',
-    passwordSubmit: 'Postavi lozinku',
-    passwordWorking: 'Postavljam…',
-  },
-
-  recoveryManage: {
-    open: 'Kodovi za oporavak',
-    title: 'Kodovi za oporavak',
-    status: (remaining: number, total: number) =>
-      `Preostalo neiskorišćenih kodova: ${remaining} od ${total}.`,
-    none: 'Još nemate kodove za oporavak.',
-    low: 'Ostalo je malo kodova. Napravite nove.',
-    createdAt: (when: string) => `Napravljeni: ${when}`,
-    regenerateTitle: 'Novi kodovi',
-    regenerateHint:
-      'Pravi novi skup kodova. Svi stari kodovi (i neiskorišćeni) odmah prestaju da važe. Potrebna je master lozinka.',
-    submit: 'Napravi nove kodove',
-    working: 'Pravim kodove…',
-    done: 'Gotovo',
-    back: 'Nazad',
-  },
-
   errors: {
-    recoveryCodeFormat:
-      'Kod za oporavak nije u ispravnom obliku: 10 slova ili cifara, na primer ABCDE-FGHJK.',
-    wrongRecoveryCode:
-      'Ovaj kod ne otvara vault. Proverite da li ste ga dobro prepisali ili probajte drugi kod.',
-    invalidRecovery: 'Zahtev za oporavak nije važeći ili je istekao. Počnite ponovo.',
     invalidEmail: 'Unesite ispravnu email adresu.',
     passwordTooShort: (min: number) => `Master lozinka mora imati najmanje ${min} znakova.`,
     passwordMismatch: 'Lozinke se ne poklapaju.',

@@ -1,17 +1,14 @@
 import { assertAcceptableKdfParams } from '@sleepsafe/crypto';
 import {
   type ListSessionsResponse,
-  type RecoveryStatus,
   changePasswordRequestSchema,
   deleteAccountRequestSchema,
-  replaceRecoveryCodesRequestSchema,
 } from '@sleepsafe/shared';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { createAuthenticator } from '../authenticate';
 import { type NoticeKind, buildNoticeEmail } from '../emails';
 import { AppError } from '../errors';
-import { assertAcceptableRecoveryParams, replaceRecoveryCodes } from '../recovery';
 import { hashAuthKey, verifyAuthKey } from '../security';
 import type { AuthDeps } from './auth';
 
@@ -85,37 +82,6 @@ export function registerAccountRoutes(app: FastifyInstance, deps: AuthDeps): voi
     });
 
     notify(request, user.email, 'PASSWORD_CHANGED');
-    return reply.code(204).send();
-  });
-
-  app.get('/auth/recovery-codes', async (request): Promise<RecoveryStatus> => {
-    const { userId } = await authenticate(request);
-    const [total, remaining, latest] = await Promise.all([
-      prisma.recoveryCode.count({ where: { userId } }),
-      prisma.recoveryCode.count({ where: { userId, usedAt: null } }),
-      prisma.recoveryCode.aggregate({ where: { userId }, _max: { createdAt: true } }),
-    ]);
-    return { total, remaining, createdAt: latest._max.createdAt?.toISOString() ?? null };
-  });
-
-  // Novi skup kodova (stari svi prestaju da vaze). Trazi master lozinku kao i promena lozinke.
-  app.post('/auth/recovery-codes', { config: authLimit }, async (request, reply) => {
-    const { userId } = await authenticate(request);
-    const body = replaceRecoveryCodesRequestSchema.parse(request.body);
-    assertAcceptableRecoveryParams(body.recovery);
-
-    const now = clock();
-    const user = await confirmPassword(userId, body.currentAuthKey, now);
-    await prisma.$transaction((tx) =>
-      replaceRecoveryCodes(tx, {
-        userId,
-        bundle: body.recovery,
-        pepper: config.SERVER_PEPPER,
-        now,
-      }),
-    );
-
-    notify(request, user.email, 'RECOVERY_CODES_CHANGED');
     return reply.code(204).send();
   });
 

@@ -19,7 +19,6 @@ import { Prisma, type PrismaClient } from '../db';
 import { buildOtpEmail } from '../emails';
 import { AppError } from '../errors';
 import type { Mailer } from '../mailer';
-import { assertAcceptableRecoveryParams, replaceRecoveryCodes } from '../recovery';
 import { fakeKdfSalt, hashAuthKey, signAccessToken, verifyAuthKey } from '../security';
 import { createSession, revokeSession, rotateSession } from '../sessions';
 import type { FailureThrottle } from '../throttle';
@@ -125,8 +124,6 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       throw new AppError(400, 'VALIDATION_ERROR', 'Invalid request');
     }
 
-    assertAcceptableRecoveryParams(body.recovery);
-
     const decoy: ChallengeResponse = { challengeId: randomUUID() };
     const existing = await prisma.user.findUnique({ where: { email: body.email } });
     if (existing?.emailVerifiedAt) {
@@ -144,19 +141,10 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
 
     let userId: string;
     try {
-      // Nalog i kodovi za oporavak se cuvaju zajedno: ili oba ili nista.
-      userId = await prisma.$transaction(async (tx) => {
-        const user = existing
-          ? await tx.user.update({ where: { id: existing.id }, data })
-          : await tx.user.create({ data: { email: body.email, ...data } });
-        await replaceRecoveryCodes(tx, {
-          userId: user.id,
-          bundle: body.recovery,
-          pepper: config.SERVER_PEPPER,
-          now: clock(),
-        });
-        return user.id;
-      });
+      const user = existing
+        ? await prisma.user.update({ where: { id: existing.id }, data })
+        : await prisma.user.create({ data: { email: body.email, ...data } });
+      userId = user.id;
     } catch (error) {
       if (isUniqueViolation(error)) {
         return reply.code(202).send(decoy);
