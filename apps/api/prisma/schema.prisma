@@ -12,6 +12,15 @@ enum OtpPurpose {
   LOGIN
 }
 
+enum AuditEventType {
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  LOGOUT
+  PASSWORD_CHANGED
+  ACCOUNT_DELETED
+  SESSION_REVOKED
+}
+
 model User {
   id              String    @id @default(uuid(7)) @db.Uuid
   email           String    @unique
@@ -32,6 +41,7 @@ model User {
   sessions      Session[]
   otpChallenges OtpChallenge[]
   vaultItems    VaultItem[]
+  auditEvents AuditEvent[]
 
   @@map("users")
 }
@@ -89,3 +99,18 @@ model VaultItem {
   @@map("vault_items")
 }
 
+model AuditEvent {
+  id        String         @id @default(uuid(7)) @db.Uuid
+  userId    String?        @db.Uuid
+  email     String?
+  type      AuditEventType
+  ip        String?
+  userAgent String?
+  createdAt DateTime       @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
+  @@map("audit_events")
+}

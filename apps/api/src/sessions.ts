@@ -83,9 +83,19 @@ export async function revokeSession(
   prisma: PrismaClient,
   pepper: string,
   params: { refreshToken: string; now: Date },
-): Promise<void> {
+): Promise<{ userId: string } | null> {
+  const hash = hashRefreshToken(params.refreshToken, pepper);
+  const session = await prisma.session.findFirst({
+    where: { refreshTokenHash: hash, revokedAt: null },
+    select: { userId: true },
+  });
+  if (!session) {
+    return null;
+  }
   await prisma.session.updateMany({
-    where: { refreshTokenHash: hashRefreshToken(params.refreshToken, pepper), revokedAt: null },
+    where: { refreshTokenHash: hash, revokedAt: null },
     data: { revokedAt: params.now },
   });
+  return { userId: session.userId };
 }
+

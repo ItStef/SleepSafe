@@ -4,7 +4,10 @@
       "Bash(pnpm --filter @sleepsafe/web exec vitest run src/contract.test.ts)",
       "Bash(curl -s \"http://127.0.0.1:8125/api/v1/messages?limit=10\")",
       "Bash(curl -s \"http://127.0.0.1:8125/api/v1/message/0hOBt0lrv1IdWXSbUkUUgZ\")",
-      "Bash(cmd //c \"rmdir /s /q C:\\\\\\\\ss72\")"
+      "Bash(cmd //c \"rmdir /s /q C:\\\\\\\\ss72\")",
+      "Bash(cd /c/ss75/apps/web/src && sed -n 20,52p test/fakeServer.ts; echo ....; sed -n 90,96p test/fakeServer.ts; echo ....; sed -n 158,196p test/fakeServer.ts; echo ....VS; sed -n 40,60p screens/VaultScreen.tsx; sed -n 106,112p strings.ts; sed -n 130,136p strings.ts; tail -8 styles.css)",
+      "Read(//c/ss75/apps/web/src/**)",
+      "Bash(npx eslint *)"
     ],
     "additionalDirectories": [
       "C:\\ss72\\apps\\web\\src"

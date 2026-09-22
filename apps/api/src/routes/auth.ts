@@ -16,6 +16,7 @@ import { createAuthenticator } from '../authenticate';
 import { OTP_TTL_MINUTES, issueChallenge, redeemChallenge } from '../challenges';
 import type { Config } from '../config';
 import { Prisma, type PrismaClient } from '../db';
+import { recordAuditEvent } from '../audit';
 import { buildOtpEmail } from '../emails';
 import { AppError } from '../errors';
 import type { Mailer } from '../mailer';
@@ -194,6 +195,13 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     );
     if (!verified || !keyMatches) {
       loginThrottle.recordFailure(email, now);
+      void recordAuditEvent(prisma, {
+        userId: user?.id ?? null,
+        email,
+        type: 'LOGIN_FAILURE',
+        request,
+        now,
+      });
       throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password');
     }
 
@@ -209,6 +217,7 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     const response: ChallengeResponse = { challengeId };
     return reply.code(202).send(response);
   });
+
 
   app.post(
     '/auth/verify-otp',
@@ -229,9 +238,11 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
         ttlMs: sessionTtlMs,
       });
       setRefreshCookie(reply, session.refreshToken);
+      void recordAuditEvent(prisma, { userId, type: 'LOGIN_SUCCESS', request, now });
       return issueAccessToken(userId, session.sessionId);
     },
   );
+
 
   app.post(
     '/auth/refresh',
@@ -262,7 +273,13 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     assertAppOrigin(request);
     const refreshToken = readRefreshCookie(request);
     if (refreshToken) {
-      await revokeSession(prisma, config.SERVER_PEPPER, { refreshToken, now: clock() });
+      const revoked = await revokeSession(prisma, config.SERVER_PEPPER, {
+        refreshToken,
+        now: clock(),
+      });
+      if (revoked) {
+        void recordAuditEvent(prisma, { userId: revoked.userId, type: 'LOGOUT', request });
+      }
     }
     reply.clearCookie(REFRESH_COOKIE, cookieOptions);
     return reply.code(204).send();

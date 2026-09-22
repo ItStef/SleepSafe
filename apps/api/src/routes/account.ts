@@ -6,6 +6,7 @@ import {
 } from '@sleepsafe/shared';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import { recordAuditEvent } from '../audit';
 import { createAuthenticator } from '../authenticate';
 import { type NoticeKind, buildNoticeEmail } from '../emails';
 import { AppError } from '../errors';
@@ -79,11 +80,21 @@ export function registerAccountRoutes(app: FastifyInstance, deps: AuthDeps): voi
         where: { userId, consumedAt: null },
         data: { consumedAt: now },
       });
+      await tx.auditEvent.create({
+        data: {
+          userId,
+          type: 'PASSWORD_CHANGED',
+          ip: request.ip,
+          userAgent: request.headers['user-agent']?.slice(0, 255) ?? null,
+          createdAt: now,
+        },
+      });
     });
 
     notify(request, user.email, 'PASSWORD_CHANGED');
     return reply.code(204).send();
   });
+
 
   app.get('/auth/sessions', async (request): Promise<ListSessionsResponse> => {
     const { userId, sessionId } = await authenticate(request);
@@ -111,6 +122,7 @@ export function registerAccountRoutes(app: FastifyInstance, deps: AuthDeps): voi
       where: { id, userId, revokedAt: null },
       data: { revokedAt: clock() },
     });
+    void recordAuditEvent(prisma, { userId, type: 'SESSION_REVOKED', request });
     return reply.code(204).send();
   });
 
@@ -120,6 +132,7 @@ export function registerAccountRoutes(app: FastifyInstance, deps: AuthDeps): voi
       where: { userId, id: { not: sessionId }, revokedAt: null },
       data: { revokedAt: clock() },
     });
+    void recordAuditEvent(prisma, { userId, type: 'SESSION_REVOKED', request });
     return reply.code(204).send();
   });
 
