@@ -218,7 +218,6 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
     return reply.code(202).send(response);
   });
 
-
   app.post(
     '/auth/verify-otp',
     { config: authLimit },
@@ -242,7 +241,6 @@ export function registerAuthRoutes(app: FastifyInstance, deps: AuthDeps): void {
       return issueAccessToken(userId, session.sessionId);
     },
   );
-
 
   app.post(
     '/auth/refresh',

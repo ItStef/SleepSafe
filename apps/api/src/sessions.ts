@@ -98,4 +98,3 @@ export async function revokeSession(
   });
   return { userId: session.userId };
 }
-

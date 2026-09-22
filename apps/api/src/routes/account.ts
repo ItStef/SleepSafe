@@ -95,7 +95,6 @@ export function registerAccountRoutes(app: FastifyInstance, deps: AuthDeps): voi
     return reply.code(204).send();
   });
 
-
   app.get('/auth/sessions', async (request): Promise<ListSessionsResponse> => {
     const { userId, sessionId } = await authenticate(request);
     const rows = await prisma.session.findMany({
