@@ -47,9 +47,6 @@ infra/postgres-data/
 !.vscode/extensions.json
 !.vscode/settings.json
 
-# Lokalna podešavanja Claude Code
-.claude/settings.local.json
-
 # Operativni sistem
 .DS_Store
 Thumbs.db
